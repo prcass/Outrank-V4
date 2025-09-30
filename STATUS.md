@@ -2,42 +2,56 @@
 
 ## Last Updated: 2025-09-30
 
+## Repository Information
+- **GitHub**: https://github.com/prcass/Outrank-V4
+- **Branch**: main
+- **Local Path**: `/home/randycass/projects/know-it-all/Outrank-V4/`
+- **Parent Project**: Outrank V3 (https://github.com/prcass/Outrank-V3)
+
 ## Currently Working On
-- Setting up v4 project structure
-- Creating documentation templates
+- Ready to define gameflow changes for v4
 
 ## Completed Changes
-1. ✅ Created v4 directory structure
-2. ✅ Created STATUS.md tracking file
+1. ✅ Created new separate Outrank-V4 repository
+2. ✅ Set up complete documentation framework
+3. ✅ Migrated v3 prototype as starting point (outrank-v4-prototype.html)
+4. ✅ Migrated v3 rules as starting point (GAME_RULES_V4.md)
+5. ✅ Created all documentation templates
+6. ✅ Initialized git and pushed to GitHub
 
 ## Pending Changes
-1. ⏳ Document gameflow changes from v3 → v4
-2. ⏳ Create CHANGELOG template
-3. ⏳ Create GAMEFLOW documentation
-4. ⏳ Copy v3 prototype as starting point
-5. ⏳ Implement gameflow changes
-6. ⏳ Update rulebook for v4
+1. ⏳ Define specific gameflow changes from v3 → v4
+2. ⏳ Document changes in CHANGELOG
+3. ⏳ Update GAMEFLOW documentation
+4. ⏳ Implement gameflow changes in prototype
+5. ⏳ Update rulebook for v4 changes
+6. ⏳ Test and validate changes
 
 ## Next Steps
-1. Create documentation templates (CHANGELOG, GAMEFLOW, design-decisions, implementation-log, testing-checklist)
-2. Copy v3 prototype to v4 directory as starting point
-3. Discuss and document specific gameflow changes desired
-4. Initialize git branch for version tracking
+1. Discuss and document specific gameflow changes desired
+2. Update CHANGELOG with planned changes
+3. Modify prototype HTML with new gameflow
+4. Update GAME_RULES_V4.md to reflect changes
+5. Test thoroughly using testing-checklist.md
 
 ## Questions/Decisions Needed
 - What specific gameflow changes should be made for v4?
 - Which aspects of v3 need improvement?
+- What are the design goals for v4?
 
 ## Files Structure
 ```
-v4/
+Outrank-V4/
 ├── STATUS.md (this file)
-├── outrank-v4-prototype.html (pending)
-├── GAME_RULES_V4.md (pending)
-├── CHANGELOG_V3_TO_V4.md (pending)
-├── GAMEFLOW_V4.md (pending)
+├── outrank-v4-prototype.html ✅
+├── GAME_RULES_V4.md ✅
+├── CHANGELOG_V3_TO_V4.md ✅
+├── GAMEFLOW_V4.md ✅
 └── v4-notes/
-    ├── design-decisions.md (pending)
-    ├── implementation-log.md (pending)
-    └── testing-checklist.md (pending)
+    ├── design-decisions.md ✅
+    ├── implementation-log.md ✅
+    └── testing-checklist.md ✅
 ```
+
+## Version History
+- **2025-09-30**: Initial V4 repository created, migrated from V3
