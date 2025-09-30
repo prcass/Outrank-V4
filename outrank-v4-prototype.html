@@ -1,0 +1,2711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outrank V3 - Online Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            color: #764ba2;
+            margin-bottom: 10px;
+        }
+        
+        .game-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .info-card {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .info-card .label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .info-card .value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #764ba2;
+        }
+        
+        .main-area {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-area {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        .panel h2 {
+            color: #764ba2;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .player-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .player-card {
+            background: #f8f8f8;
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .player-card.active {
+            border-color: #764ba2;
+            background: #f0e6ff;
+        }
+        
+        .player-card.current-turn {
+            border-color: #27ae60;
+            background: #e8f8f0;
+        }
+        
+        .player-card.passed {
+            background: #ffebee;
+            border-color: #e74c3c;
+            opacity: 0.7;
+        }
+        
+        .player-card.passed .player-name::after {
+            content: ' (PASSED)';
+            color: #e74c3c;
+            font-size: 0.8em;
+            font-weight: normal;
+        }
+        
+        .player-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .player-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .token-pool {
+            min-height: 300px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            padding: 15px;
+            position: relative;
+        }
+        
+        .token-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .token {
+            width: 150px;
+            height: 150px;
+            background: white;
+            border: 4px solid #ddd;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        
+        .token:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .token.blocked {
+            border-color: #e74c3c;
+            background: #ffebee;
+            opacity: 0.7;
+        }
+        
+        .token.blocked::after {
+            content: "BLOCKED";
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #e74c3c;
+            color: white;
+            padding: 2px 5px;
+            border-radius: 10px;
+            font-size: 8px;
+        }
+        
+        .token.selected {
+            border-color: #27ae60;
+            background: #e8f8f0;
+            transform: scale(1.1);
+        }
+        
+        .token.hidden {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        /* Category-specific token colors */
+        .token-movies {
+            background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%);
+            color: white;
+            border-color: #A93226;
+        }
+        
+        .token-countries {
+            background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);
+            color: white;
+            border-color: #1F618D;
+        }
+        
+        .token-sports {
+            background: linear-gradient(135deg, #27AE60 0%, #229954 100%);
+            color: white;
+            border-color: #196F3D;
+        }
+        
+        .token-companies {
+            background: linear-gradient(135deg, #F39C12 0%, #E67E22 100%);
+            color: white;
+            border-color: #CA6F1E;
+        }
+        
+        /* Hover effects for category tokens */
+        .token-movies:hover {
+            background: linear-gradient(135deg, #EC7063 0%, #E74C3C 100%);
+        }
+        
+        .token-countries:hover {
+            background: linear-gradient(135deg, #5DADE2 0%, #3498DB 100%);
+        }
+        
+        .token-sports:hover {
+            background: linear-gradient(135deg, #58D68D 0%, #27AE60 100%);
+        }
+        
+        .token-companies:hover {
+            background: linear-gradient(135deg, #F8C471 0%, #F39C12 100%);
+        }
+        
+        /* Set badges on token edges */
+        .set-badge-top, .set-badge-right, .set-badge-bottom, .set-badge-left {
+            position: absolute;
+            font-size: 9px;
+            font-weight: bold;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            max-width: 40px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .set-badge-top {
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .set-badge-right {
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%) rotate(90deg);
+        }
+        
+        .set-badge-bottom {
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .set-badge-left {
+            left: 5px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+        }
+        
+        /* Blocked state for category tokens */
+        .token.blocked.token-movies {
+            background: linear-gradient(135deg, #FADBD8 0%, #F1948A 100%);
+            color: #922B21;
+        }
+        
+        .token.blocked.token-countries {
+            background: linear-gradient(135deg, #D6EAF8 0%, #AED6F1 100%);
+            color: #1B4F72;
+        }
+        
+        .token.blocked.token-sports {
+            background: linear-gradient(135deg, #D5F4E6 0%, #A9DFBF 100%);
+            color: #0E4B2E;
+        }
+        
+        .token.blocked.token-companies {
+            background: linear-gradient(135deg, #FCF3CF 0%, #F9E79F 100%);
+            color: #7D6608;
+        }
+        
+        /* Selected state for category tokens */
+        .token.selected.token-movies {
+            border-color: #27ae60;
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.6);
+        }
+        
+        .token.selected.token-countries {
+            border-color: #27ae60;
+            box-shadow: 0 0 15px rgba(52, 152, 219, 0.6);
+        }
+        
+        .token.selected.token-sports {
+            border-color: #27ae60;
+            box-shadow: 0 0 15px rgba(39, 174, 96, 0.6);
+        }
+        
+        .token.selected.token-companies {
+            border-color: #27ae60;
+            box-shadow: 0 0 15px rgba(243, 156, 18, 0.6);
+        }
+        
+        .token-category {
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+        
+        .token-name {
+            font-size: 12px;
+            line-height: 1.2;
+            margin-top: 5px;
+        }
+        
+        .challenge-area {
+            background: #f8f8f8;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .challenge-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .challenge-cards {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        
+        .challenge-option {
+            background: white;
+            border: 2px solid #ddd;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .challenge-option:hover {
+            border-color: #764ba2;
+            background: #f0e6ff;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            background: #764ba2;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            background: #5a3785;
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn.secondary {
+            background: #95a5a6;
+        }
+        
+        .btn.secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .btn.success {
+            background: #27ae60;
+        }
+        
+        .btn.success:hover {
+            background: #229954;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 350px;
+            height: 100%;
+            background: white;
+            z-index: 1000;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.3);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
+        
+        .modal.active {
+            display: block;
+            transform: translateX(0);
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 20px;
+            height: 100%;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-content h2 {
+            color: #764ba2;
+            margin-bottom: 20px;
+        }
+        
+        .bid-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .bid-input input {
+            flex: 1;
+            padding: 10px;
+            font-size: 24px;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        
+        .ranking-area {
+            min-height: 100px;
+            background: #f0f0f0;
+            border: 2px dashed #999;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 20px 0;
+        }
+        
+        .ranking-slots {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .ranking-slot {
+            width: 120px;
+            height: 140px;
+            background: white;
+            border: 3px dashed #ccc;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin: 5px;
+        }
+        
+        .ranking-slot .position {
+            position: absolute;
+            top: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .phase-indicator {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .phase-indicator .phase-name {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .phase-indicator .phase-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #764ba2;
+            margin-top: 5px;
+        }
+        
+        .sets-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .set-badge {
+            background: #e8f8f0;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .hidden-tokens {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .mini-token {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        
+        .mini-token.token-movies {
+            background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%);
+        }
+        
+        .mini-token.token-countries {
+            background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);
+        }
+        
+        .mini-token.token-sports {
+            background: linear-gradient(135deg, #27AE60 0%, #229954 100%);
+        }
+        
+        .mini-token.token-companies {
+            background: linear-gradient(135deg, #F39C12 0%, #E67E22 100%);
+        }
+        
+        .mini-set-badge {
+            position: absolute;
+            font-size: 6px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 1px 2px;
+            border-radius: 2px;
+        }
+        
+        .mini-set-badge:first-of-type {
+            top: 2px;
+            right: 2px;
+        }
+        
+        .mini-set-badge:last-of-type {
+            bottom: 2px;
+            left: 2px;
+        }
+        
+        .blocking-chips {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .chip {
+            width: 40px;
+            height: 40px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .chip:hover {
+            transform: scale(1.1);
+        }
+        
+        .chip.used {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            z-index: 2000;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .notification.success {
+            border-left: 4px solid #27ae60;
+        }
+        
+        .notification.error {
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .notification.info {
+            border-left: 4px solid #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎯 Outrank V3 - Online Prototype</h1>
+            <div class="game-info">
+                <div class="info-card">
+                    <div class="label">Round</div>
+                    <div class="value" id="round-number">1</div>
+                </div>
+                <div class="info-card">
+                    <div class="label">Current Phase</div>
+                    <div class="value" id="current-phase">Setup</div>
+                </div>
+                <div class="info-card">
+                    <div class="label">Current Player</div>
+                    <div class="value" id="current-player">-</div>
+                </div>
+                <div class="info-card">
+                    <div class="label">Tokens in Pool</div>
+                    <div class="value" id="pool-count">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Game Area -->
+        <div class="main-area">
+            <!-- Left Panel - Players -->
+            <div class="panel">
+                <h2>Players</h2>
+                <div class="player-list" id="player-list">
+                    <!-- Players will be added here -->
+                </div>
+                <button class="btn" onclick="startNewGame()">New Game</button>
+            </div>
+            
+            <!-- Center Panel - Game Board -->
+            <div class="panel">
+                <div class="phase-indicator">
+                    <div class="phase-name">Current Phase</div>
+                    <div class="phase-title" id="phase-title">Game Setup</div>
+                </div>
+                
+                <!-- Challenge Area -->
+                <div class="challenge-area" id="challenge-area">
+                    <h2>Challenge Cards</h2>
+                    <div class="challenge-cards" id="challenge-cards">
+                        <!-- Challenge cards will appear here -->
+                    </div>
+                </div>
+                
+                <!-- Bidding Status -->
+                <div id="bidding-status" style="background: #f8f8f8; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: none;">
+                    <h3>Bidding Status</h3>
+                    <div id="bidding-info">
+                        <!-- Bidding information will appear here -->
+                    </div>
+                </div>
+                
+                <!-- Token Pool -->
+                <div class="token-pool">
+                    <h3>Token Pool</h3>
+                    <div class="token-grid" id="token-pool">
+                        <!-- Tokens will appear here -->
+                    </div>
+                </div>
+                
+                <!-- Controls -->
+                <div class="controls" id="game-controls">
+                    <button class="btn" id="action-btn" onclick="handleMainAction()">Start Game</button>
+                    <button class="btn secondary" id="pass-btn" onclick="handlePass()" style="display:none;">Pass</button>
+                    <button class="btn" onclick="showGameRules()" style="background: #3498db;">How to Play</button>
+                </div>
+            </div>
+            
+            <!-- Right Panel - Current Player Info -->
+            <div class="panel">
+                <h2>Your Hand</h2>
+                <div class="hidden-tokens" id="hidden-tokens">
+                    <!-- Hidden tokens will appear here -->
+                </div>
+                
+                <h2 style="margin-top: 20px;">Blocking Chips</h2>
+                <div class="blocking-chips" id="blocking-chips">
+                    <!-- Chips will appear here -->
+                </div>
+                
+                <h2 style="margin-top: 20px;">Your Collection</h2>
+                <div class="sets-display" id="sets-display">
+                    <!-- Owned tokens and sets will appear here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modals -->
+    <div class="modal" id="rules-modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <h2>🎯 How to Play Outrank V3</h2>
+            
+            <div style="margin: 20px 0; padding: 15px; background: #f0f8ff; border-radius: 10px;">
+                <h3>🎮 Game Overview</h3>
+                <p>Outrank V3 is a strategic trivia game where you collect tokens to build valuable sets while demonstrating your ranking knowledge.</p>
+            </div>
+            
+            <div style="margin: 20px 0;">
+                <h3>📋 Each Round:</h3>
+                <ol style="margin-left: 20px; line-height: 1.6;">
+                    <li><strong>Challenge Selection:</strong> Choose a challenge (e.g., "GDP Lowest to Highest")</li>
+                    <li><strong>Strategic Bidding:</strong> Bid on how many tokens you can correctly rank
+                        <ul style="margin-left: 20px; margin-top: 5px;">
+                            <li>You see 6 visible tokens + your 2 hidden tokens for this category</li>
+                            <li>Bid based on your confidence and which tokens you need for sets</li>
+                        </ul>
+                    </li>
+                    <li><strong>Blocking Phase:</strong> Other players can block visible tokens (costs blocking chips)
+                        <ul style="margin-left: 20px; margin-top: 5px;">
+                            <li>Strategic: Block tokens they need for sets or easy rankings</li>
+                            <li>Risk: If they succeed, you lose your chip. If they fail, you get 2 points</li>
+                        </ul>
+                    </li>
+                    <li><strong>Ranking:</strong> Select and rank exactly your bid amount of tokens</li>
+                    <li><strong>Collection:</strong> Successfully ranked tokens go to your collection</li>
+                </ol>
+            </div>
+            
+            <div style="margin: 20px 0; padding: 15px; background: #f0fff0; border-radius: 10px;">
+                <h3>🏆 Scoring System:</h3>
+                <ul style="margin-left: 20px; line-height: 1.6;">
+                    <li><strong>Successful Ranking:</strong> 1 point per correctly ranked token</li>
+                    <li><strong>Successful Blocking:</strong> 2 points when someone fails after you blocked them</li>
+                    <li><strong>Set Collection Bonuses (End Game):</strong>
+                        <ul style="margin-left: 20px; margin-top: 5px;">
+                            <li>3+ tokens in same set: +5 points</li>
+                            <li>5+ tokens in same set: +15 points total</li>
+                            <li>Complete sets (varies): +25 points</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            
+            <div style="margin: 20px 0; padding: 15px; background: #fff8f0; border-radius: 10px;">
+                <h3>🧠 Strategy Tips:</h3>
+                <ul style="margin-left: 20px; line-height: 1.6;">
+                    <li><strong>Hidden Information:</strong> Your 2 hidden tokens give you ranking confidence</li>
+                    <li><strong>Set Building:</strong> Prioritize tokens that complete your sets</li>
+                    <li><strong>Blocking Decisions:</strong> Block tokens they need for sets vs. easy rankings</li>
+                    <li><strong>Risk Management:</strong> Don't bid too high if you're not confident</li>
+                </ul>
+            </div>
+            
+            <div style="margin: 20px 0; padding: 15px; background: #f8f0ff; border-radius: 10px;">
+                <h3>🎲 Token Sets Examples:</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
+                    <div>
+                        <strong>Countries:</strong>
+                        <ul style="margin-left: 15px; font-size: 14px;">
+                            <li>G7 Nations</li>
+                            <li>NATO Members</li>
+                            <li>BRICS Countries</li>
+                            <li>Island Nations</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong>Movies:</strong>
+                        <ul style="margin-left: 15px; font-size: 14px;">
+                            <li>Marvel Films</li>
+                            <li>Oscar Winners</li>
+                            <li>Billion Dollar Club</li>
+                            <li>Sci-Fi Genre</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn" onclick="closeRulesModal()">Got It - Let's Play!</button>
+        </div>
+    </div>
+    <div class="modal" id="bid-modal">
+        <div class="modal-content">
+            <div style="text-align: right; margin-bottom: 10px;">
+                <button onclick="closeBidModal()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+            </div>
+            <div id="bid-category-info" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+                <div style="font-size: 18px; font-weight: bold;" id="bid-category-name">Category</div>
+                <div style="font-size: 14px; opacity: 0.9;" id="bid-challenge-name">Challenge</div>
+            </div>
+            <h2>Place Your Bid</h2>
+            <p>How many tokens can you correctly rank?</p>
+            <div class="bid-input">
+                <button class="btn secondary" onclick="adjustBid(-1)">-</button>
+                <input type="number" id="bid-amount" min="0" max="8" value="0">
+                <button class="btn secondary" onclick="adjustBid(1)">+</button>
+            </div>
+            <p id="bid-info" style="text-align: center; color: #666; margin: 10px 0;"></p>
+            <div class="controls">
+                <button class="btn success" onclick="submitBid()">Submit Bid</button>
+                <button class="btn secondary" onclick="passBid()">Pass</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="ranking-modal">
+        <div class="modal-content">
+            <div style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+                <div style="font-size: 18px; font-weight: bold;">🎯 Ranking Phase</div>
+                <div style="font-size: 14px; opacity: 0.9;">Arrange tokens in the correct order</div>
+            </div>
+            <div class="challenge-card" id="ranking-challenge">
+                <!-- Challenge will appear here -->
+            </div>
+            <div style="background: #e8f5e8; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #4caf50;">
+                <h4 style="margin: 0 0 10px 0; color: #2e7d32;">📚 How Ranking Works:</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #333;">
+                    <li><strong>Drag tokens</strong> from the available list into ranking slots</li>
+                    <li><strong>Arrange from lowest to highest</strong> according to the challenge</li>
+                    <li><strong>If you succeed:</strong> Get 1 point per token + collect all tokens + collect all blocking chips used against you</li>
+                    <li><strong>If you fail:</strong> Get 0 points, blockers get 2 points each + their blocked tokens</li>
+                    <li><strong>Use your hidden tokens wisely</strong> - you know their exact values!</li>
+                </ul>
+            </div>
+            <p><strong>Drag tokens to rank them (lowest to highest):</strong></p>
+            <div class="ranking-area">
+                <div class="ranking-slots" id="ranking-slots">
+                    <!-- Ranking slots will appear here -->
+                </div>
+            </div>
+            <div class="controls">
+                <button class="btn success" onclick="validateRanking()">🔍 Validate My Ranking</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="blocking-modal">
+        <div class="modal-content">
+            <div style="text-align: right; margin-bottom: 10px;">
+                <button onclick="skipBlocking()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+            </div>
+            <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+                <div style="font-size: 18px; font-weight: bold;">🛡️ Blocking Phase</div>
+                <div style="font-size: 14px; opacity: 0.9;">Prevent the winner from using tokens</div>
+            </div>
+            <div style="background: #fff8e1; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #ff9800;">
+                <h4 style="margin: 0 0 10px 0; color: #e65100;">📚 How Blocking Works:</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #333;">
+                    <li><strong>If the bidder succeeds:</strong> You lose your blocking chip (no points)</li>
+                    <li><strong>If the bidder fails:</strong> You get 2 points + ownership of blocked token</li>
+                    <li><strong>Strategy:</strong> Block tokens you think they need to complete their ranking</li>
+                    <li><strong>You can skip</strong> to save your chips for later rounds</li>
+                </ul>
+            </div>
+            <h3>Select a token to block:</h3>
+            <div class="token-grid" id="blocking-tokens">
+                <!-- Blockable tokens will appear here -->
+            </div>
+            <div class="controls">
+                <button class="btn secondary" onclick="skipBlocking()">Skip Blocking (Save Chips)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let gameState = {
+            players: [],
+            currentPlayer: 0,
+            round: 1,
+            phase: 'setup', // setup, challenge, bidding, blocking, ranking, scoring
+            currentChallenge: null,
+            currentCategory: null,
+            tokenPools: {
+                countries: [],
+                movies: [],
+                sports: [],
+                companies: []
+            },
+            centerPool: [],
+            currentBid: 0,
+            highestBidder: null,
+            selectedTokens: [],
+            blockedTokens: [], // Array of {tokenIndex, playerIndex} objects
+            scores: {},
+            ownedTokens: {}, // Track which tokens each player owns
+            usedTokenIds: new Set(), // Track all used token IDs to prevent duplicates
+            totalBlockingChips: 0
+        };
+
+        // Token Data (Sample data - expand as needed)
+        const tokenDatabase = {
+            countries: [
+                { id: '001', name: 'Germany', emoji: '🇩🇪', sets: ['Europe', 'G7', 'EU', 'High GDP'], 
+                  stats: { gdp: 4525.7, unemployment: 3.4, population: 83.9, lifeExpectancy: 80.54 } },
+                { id: '002', name: 'Denmark', emoji: '🇩🇰', sets: ['Europe', 'EU', 'Nordic', 'High Happiness'], 
+                  stats: { gdp: 407.1, unemployment: 5.6, population: 5.9, lifeExpectancy: 81.85 } },
+                { id: '003', name: 'Austria', emoji: '🇦🇹', sets: ['Europe', 'EU', 'Alpine', 'High Culture'], 
+                  stats: { gdp: 511.7, unemployment: 5.4, population: 9.1, lifeExpectancy: 81.54 } },
+                { id: '004', name: 'Turkey', emoji: '🇹🇷', sets: ['Europe/Asia', 'NATO', 'Emerging', 'Bridge'], 
+                  stats: { gdp: 1118.3, unemployment: 8.4, population: 85.3, lifeExpectancy: 77.16 } },
+                { id: '005', name: 'United States', emoji: '🇺🇸', sets: ['North America', 'G7', 'NATO', 'Top GDP'], 
+                  stats: { gdp: 27720.7, unemployment: 4.1, population: 336.8, lifeExpectancy: 78.39 } },
+                { id: '006', name: 'China', emoji: '🇨🇳', sets: ['Asia', 'BRICS', 'Emerging', 'Top GDP'], 
+                  stats: { gdp: 18270.4, unemployment: 4.6, population: 1410.7, lifeExpectancy: 77.95 } },
+                { id: '007', name: 'Japan', emoji: '🇯🇵', sets: ['Asia', 'G7', 'Island', 'Tech Leader'], 
+                  stats: { gdp: 4213.2, unemployment: 2.6, population: 124.5, lifeExpectancy: 84.04 } },
+                { id: '008', name: 'United Kingdom', emoji: '🇬🇧', sets: ['Europe', 'G7', 'Island', 'Commonwealth'], 
+                  stats: { gdp: 3369.9, unemployment: 4.1, population: 68.5, lifeExpectancy: 81.24 } },
+                { id: '009', name: 'France', emoji: '🇫🇷', sets: ['Europe', 'G7', 'EU', 'Culture'], 
+                  stats: { gdp: 3051.8, unemployment: 7.4, population: 68.3, lifeExpectancy: 82.93 } },
+                { id: '010', name: 'Italy', emoji: '🇮🇹', sets: ['Europe', 'G7', 'EU', 'Mediterranean'], 
+                  stats: { gdp: 2304.6, unemployment: 6.8, population: 59.0, lifeExpectancy: 83.7 } },
+                { id: '011', name: 'Canada', emoji: '🇨🇦', sets: ['North America', 'G7', 'Commonwealth', 'Resources'], 
+                  stats: { gdp: 2173.3, unemployment: 6.4, population: 40.1, lifeExpectancy: 81.65 } },
+                { id: '012', name: 'Australia', emoji: '🇦🇺', sets: ['Oceania', 'G20', 'Commonwealth', 'Island'], 
+                  stats: { gdp: 1728.1, unemployment: 4.1, population: 26.7, lifeExpectancy: 83.05 } },
+                { id: '013', name: 'Spain', emoji: '🇪🇸', sets: ['Europe', 'EU', 'Mediterranean', 'Tourism'], 
+                  stats: { gdp: 1620.1, unemployment: 11.4, population: 48.3, lifeExpectancy: 83.88 } },
+                { id: '014', name: 'Netherlands', emoji: '🇳🇱', sets: ['Europe', 'EU', 'Low Countries', 'Trade'], 
+                  stats: { gdp: 1154.4, unemployment: 3.6, population: 17.9, lifeExpectancy: 81.91 } },
+                { id: '015', name: 'Sweden', emoji: '🇸🇪', sets: ['Europe', 'EU', 'Nordic', 'Innovation'], 
+                  stats: { gdp: 585.5, unemployment: 8.5, population: 10.5, lifeExpectancy: 83.31 } },
+                { id: '016', name: 'Norway', emoji: '🇳🇴', sets: ['Europe', 'Nordic', 'Oil Rich', 'Happiness'], 
+                  stats: { gdp: 482.9, unemployment: 4.0, population: 5.5, lifeExpectancy: 83.11 } }
+            ],
+            movies: [
+                { id: '001', name: 'Aladdin (2019)', emoji: '🧞', sets: ['Disney', 'Live Action', 'Fantasy', 'Musical'], 
+                  stats: { boxOffice: 1054.3, runtime: 128, imdbRating: 6.9, rottenTomatoes: 57 } },
+                { id: '002', name: 'Alice in Wonderland (2010)', emoji: '🐰', sets: ['Disney', 'Fantasy', 'Burton', 'Adventure'], 
+                  stats: { boxOffice: 1025.5, runtime: 108, imdbRating: 6.4, rottenTomatoes: 51 } },
+                { id: '003', name: 'Aquaman', emoji: '🔱', sets: ['DC', 'Superhero', 'Ocean', 'Action'], 
+                  stats: { boxOffice: 2299.1, runtime: 155, imdbRating: 8.8, rottenTomatoes: 65 } },
+                { id: '004', name: 'Avatar', emoji: '🌳', sets: ['Sci-Fi', 'Cameron', 'Pandora', 'Blockbuster'], 
+                  stats: { boxOffice: 2923.7, runtime: 162, imdbRating: 8.2, rottenTomatoes: 82 } },
+                { id: '005', name: 'Avengers: Endgame', emoji: '⚡', sets: ['Marvel', 'Superhero', 'Epic', 'Finale'], 
+                  stats: { boxOffice: 2798.5, runtime: 181, imdbRating: 8.5, rottenTomatoes: 94 } },
+                { id: '006', name: 'Avengers: Infinity War', emoji: '💎', sets: ['Marvel', 'Superhero', 'Epic', 'Thanos'], 
+                  stats: { boxOffice: 1373.2, runtime: 172, imdbRating: 8.2, rottenTomatoes: 85 } },
+                { id: '007', name: 'Barbie', emoji: '💗', sets: ['Comedy', 'Pink', 'Mattel', 'Cultural'], 
+                  stats: { boxOffice: 1446.3, runtime: 114, imdbRating: 7.0, rottenTomatoes: 88 } },
+                { id: '008', name: 'Beauty and the Beast (2017)', emoji: '🌹', sets: ['Disney', 'Live Action', 'Musical', 'Romance'], 
+                  stats: { boxOffice: 1264.1, runtime: 129, imdbRating: 7.1, rottenTomatoes: 71 } },
+                { id: '009', name: 'Black Panther', emoji: '🐾', sets: ['Marvel', 'Superhero', 'Wakanda', 'Cultural'], 
+                  stats: { boxOffice: 1349.9, runtime: 134, imdbRating: 7.3, rottenTomatoes: 96 } },
+                { id: '010', name: 'Captain America: Civil War', emoji: '🛡️', sets: ['Marvel', 'Superhero', 'Action', 'Drama'], 
+                  stats: { boxOffice: 1155.0, runtime: 147, imdbRating: 7.8, rottenTomatoes: 90 } },
+                { id: '011', name: 'The Dark Knight Rises', emoji: '🦇', sets: ['DC', 'Batman', 'Nolan', 'Dark'], 
+                  stats: { boxOffice: 1081.1, runtime: 165, imdbRating: 8.4, rottenTomatoes: 87 } },
+                { id: '012', name: 'Deadpool', emoji: '💀', sets: ['Marvel', 'R-Rated', 'Comedy', 'Anti-Hero'], 
+                  stats: { boxOffice: 783.1, runtime: 108, imdbRating: 8.0, rottenTomatoes: 85 } },
+                { id: '013', name: 'Despicable Me 3', emoji: '🍌', sets: ['Animation', 'Family', 'Minions', 'Comedy'], 
+                  stats: { boxOffice: 1034.8, runtime: 90, imdbRating: 6.3, rottenTomatoes: 59 } },
+                { id: '014', name: 'Fast & Furious 6', emoji: '🏎️', sets: ['Action', 'Cars', 'Family', 'Franchise'], 
+                  stats: { boxOffice: 788.7, runtime: 130, imdbRating: 7.0, rottenTomatoes: 70 } },
+                { id: '015', name: 'Finding Dory', emoji: '🐠', sets: ['Pixar', 'Animation', 'Ocean', 'Family'], 
+                  stats: { boxOffice: 1029.3, runtime: 97, imdbRating: 7.3, rottenTomatoes: 94 } },
+                { id: '016', name: 'Frozen', emoji: '❄️', sets: ['Disney', 'Animation', 'Musical', 'Princess'], 
+                  stats: { boxOffice: 2209.5, runtime: 140, imdbRating: 6.7, rottenTomatoes: 90 } }
+            ]
+        };
+
+        // Challenges
+        const challenges = {
+            countries: [
+                { id: 'gdp', name: 'GDP (Lowest to Highest)', stat: 'gdp', unit: 'trillion $' },
+                { id: 'population', name: 'Population (Lowest to Highest)', stat: 'population', unit: 'million' },
+                { id: 'area', name: 'Land Area (Smallest to Largest)', stat: 'area', unit: 'million km²' },
+                { id: 'happiness', name: 'Happiness Index (Lowest to Highest)', stat: 'happiness', unit: 'score' }
+            ],
+            movies: [
+                { id: 'boxOffice', name: 'Box Office (Lowest to Highest)', stat: 'boxOffice', unit: 'million $' },
+                { id: 'budget', name: 'Budget (Lowest to Highest)', stat: 'budget', unit: 'million $' },
+                { id: 'runtime', name: 'Runtime (Shortest to Longest)', stat: 'runtime', unit: 'minutes' },
+                { id: 'rating', name: 'IMDB Rating (Lowest to Highest)', stat: 'imdbRating', unit: 'stars' }
+            ]
+        };
+
+        // Initialize Game
+        function initGame() {
+            setupPlayers();
+            setupTokenPools();
+            distributeInitialTokens();
+            generateChallengeCards();
+            updateDisplay();
+        }
+
+        function setupPlayers() {
+            // For prototype, create 3 players
+            gameState.players = [
+                { name: 'You', hiddenTokens: [], blockingChips: 2, score: 0, isHuman: true },
+                { name: 'AI Player 1', hiddenTokens: [], blockingChips: 2, score: 0, isHuman: false },
+                { name: 'AI Player 2', hiddenTokens: [], blockingChips: 2, score: 0, isHuman: false }
+            ];
+            
+            gameState.players.forEach(player => {
+                gameState.scores[player.name] = 0;
+                gameState.ownedTokens[player.name] = [];
+            });
+            
+            // Set total blocking chips in the game (2 per player, stays constant)
+            gameState.totalBlockingChips = gameState.players.length * 2;
+            console.log(`Game has ${gameState.totalBlockingChips} total blocking chips`);
+        }
+
+        function setupTokenPools() {
+            // Initialize token pools with shuffled tokens
+            Object.keys(tokenDatabase).forEach(category => {
+                gameState.tokenPools[category] = [...tokenDatabase[category]];
+                shuffleArray(gameState.tokenPools[category]);
+                console.log(`Initialized ${category} pool with ${gameState.tokenPools[category].length} tokens`);
+            });
+        }
+
+        function distributeInitialTokens() {
+            // Give each player 2 tokens from each active category
+            console.log('=== DISTRIBUTING INITIAL TOKENS ===');
+            
+            gameState.players.forEach((player, playerIndex) => {
+                player.hiddenTokens = [];
+                console.log(`Giving tokens to ${player.name} (player ${playerIndex})`);
+                
+                ['countries', 'movies'].forEach(category => {
+                    console.log(`  ${category} tokens:`);
+                    for (let i = 0; i < 2; i++) {
+                        // Give players tokens from positions 6+ in database (after center pool)
+                        const tokenIndex = 6 + (playerIndex * 2) + i;
+                        if (tokenDatabase[category] && tokenIndex < tokenDatabase[category].length) {
+                            const token = { ...tokenDatabase[category][tokenIndex] };
+                            player.hiddenTokens.push({ ...token, category });
+                            console.log(`    ✅ ${token.name} (${token.id})`);
+                        } else {
+                            console.error(`    ❌ Failed to get token ${i+1} for ${player.name}`);
+                        }
+                    }
+                });
+            });
+            
+            console.log('=== INITIAL TOKENS COMPLETE ===');
+        }
+        
+        function getUniqueToken(category) {
+            // Get a token that hasn't been used yet
+            const availableTokens = gameState.tokenPools[category].filter(token => 
+                !gameState.usedTokenIds.has(token.id)
+            );
+            
+            if (availableTokens.length === 0) {
+                console.warn(`No more unique tokens available for ${category}`);
+                return null;
+            }
+            
+            // Remove from pool and return
+            const token = availableTokens[0];
+            const poolIndex = gameState.tokenPools[category].findIndex(t => t.id === token.id);
+            if (poolIndex !== -1) {
+                gameState.tokenPools[category].splice(poolIndex, 1);
+            }
+            
+            return token;
+        }
+
+        function generateChallengeCards() {
+            const container = document.getElementById('challenge-cards');
+            container.innerHTML = '';
+            
+            // Show 3 random challenges
+            const allChallenges = [];
+            Object.keys(challenges).forEach(category => {
+                challenges[category].forEach(challenge => {
+                    allChallenges.push({ ...challenge, category });
+                });
+            });
+            
+            shuffleArray(allChallenges);
+            const selectedChallenges = allChallenges.slice(0, 3);
+            
+            selectedChallenges.forEach(challenge => {
+                const card = document.createElement('div');
+                card.className = 'challenge-option';
+                card.innerHTML = `
+                    <div style="font-weight: bold; color: #764ba2;">${challenge.category.toUpperCase()}</div>
+                    <div>${challenge.name}</div>
+                `;
+                card.onclick = () => selectChallenge(challenge);
+                container.appendChild(card);
+            });
+        }
+
+        function selectChallenge(challenge) {
+            if (gameState.phase !== 'setup' && gameState.phase !== 'challenge') return;
+            
+            gameState.currentChallenge = challenge;
+            gameState.currentCategory = challenge.category;
+            
+            // Setup center pool for this category FIRST
+            console.log('\n=== CHALLENGE SELECTED ===');
+            console.log('Selected challenge:', challenge.name);
+            console.log('Category:', challenge.category);
+            
+            setupCenterPool();
+            
+            // Verify center pool was set up correctly
+            if (gameState.centerPool.length !== 6) {
+                console.error('❌ CENTER POOL SETUP FAILED!');
+                console.error('Expected 6 tokens, got:', gameState.centerPool.length);
+                // Force emergency setup
+                gameState.centerPool = [];
+                for (let i = 0; i < 6 && i < tokenDatabase[gameState.currentCategory].length; i++) {
+                    const token = { ...tokenDatabase[gameState.currentCategory][i] };
+                    gameState.centerPool.push({ ...token, category: gameState.currentCategory });
+                }
+                console.log('✅ Emergency setup complete:', gameState.centerPool.length, 'tokens');
+            }
+            
+            // NOW move to bidding phase
+            gameState.phase = 'bidding';
+            gameState.currentBid = 0;
+            gameState.highestBidder = null;
+            gameState.passedPlayers = new Set(); // Clear passed players for new challenge
+            gameState.biddingStartPlayer = gameState.currentPlayer;
+            
+            console.log('=== BIDDING PHASE INITIALIZED ===');
+            console.log('Passed players cleared for new challenge');
+            
+            // Update display to show tokens
+            updateDisplay();
+            updateTokenPool();
+            
+            console.log('\n=== BIDDING PHASE STARTING ===');
+            console.log('Center pool ready with', gameState.centerPool.length, 'tokens');
+            console.log('Tokens visible:', gameState.centerPool.map(t => t.name));
+            
+            // FORCE UI UPDATE - Make sure tokens are visible before bidding
+            setTimeout(() => {
+                const poolElement = document.getElementById('token-pool');
+                console.log('🔍 Token pool element children count:', poolElement.children.length);
+                if (poolElement.children.length === 0) {
+                    console.error('❌ TOKENS NOT VISIBLE! Force updating...');
+                    updateTokenPool();
+                } else {
+                    console.log('✅ Tokens are visible in UI');
+                }
+            }, 100);
+            
+            // Start bidding with current player after display updates
+            setTimeout(() => {
+                if (gameState.players[gameState.currentPlayer].isHuman) {
+                    showBidModal();
+                } else {
+                    aiMakeBid();
+                }
+            }, 200);
+        }
+
+        function setupCenterPool() {
+            // Set up center pool with unused tokens for new challenge
+            gameState.centerPool = [];
+            const category = gameState.currentCategory;
+            
+            console.log('=== SETTING UP CENTER POOL ===');
+            console.log('Category:', category);
+            console.log('Available in database:', tokenDatabase[category] ? tokenDatabase[category].length : 'NONE');
+            console.log('Used token IDs:', Array.from(gameState.usedTokenIds));
+            
+            // GUARANTEE: Must have exactly 6 tokens
+            if (!tokenDatabase[category] || tokenDatabase[category].length < 6) {
+                console.error('❌ FATAL ERROR: Not enough tokens in database for', category);
+                console.error('Required: 6 tokens, Available:', tokenDatabase[category] ? tokenDatabase[category].length : 0);
+                throw new Error(`Database for ${category} must have at least 6 tokens!`);
+            }
+            
+            // Add 6 unused tokens to center pool
+            let added = 0;
+            for (let i = 0; i < tokenDatabase[category].length && added < 6; i++) {
+                const token = tokenDatabase[category][i];
+                console.log(`🔍 Checking token ${token.name} (${token.id}): used=${gameState.usedTokenIds.has(token.id)}`);
+                if (!gameState.usedTokenIds.has(token.id)) {
+                    gameState.centerPool.push({ ...token, category });
+                    console.log(`✅ Added token ${added+1}/6: ${token.name} (${token.id})`);
+                    added++;
+                } else {
+                    console.log(`⏭️ Skipping ${token.name} (${token.id}) - already used`);
+                }
+            }
+            
+            // VERIFICATION: Exactly 6 tokens must be in center pool
+            if (gameState.centerPool.length !== 6) {
+                console.error('❌ SETUP VERIFICATION FAILED!');
+                console.error('Expected: 6 tokens, Got:', gameState.centerPool.length);
+                throw new Error(`Center pool setup failed! Expected 6, got ${gameState.centerPool.length}`);
+            }
+            
+            console.log('=== CENTER POOL COMPLETE ===');
+            console.log('✅ SUCCESS: Exactly', gameState.centerPool.length, 'tokens in center pool');
+            console.log('Tokens:', gameState.centerPool.map(t => t.name));
+            
+            // Force update the display
+            updateTokenPool();
+        }
+        
+        function refillCenterPool() {
+            // Refill center pool to maintain minimum 6 tokens
+            const category = gameState.currentCategory;
+            const currentCount = gameState.centerPool.length;
+            const minTokens = 6;
+            const needed = Math.max(0, minTokens - currentCount);
+            
+            if (needed > 0) {
+                console.log(`🔄 Refilling center pool: current=${currentCount}, need=${needed} more tokens`);
+                
+                let added = 0;
+                for (let i = 0; i < needed; i++) {
+                    const token = getUniqueToken(category);
+                    if (token) {
+                        gameState.centerPool.push({ ...token, category });
+                        gameState.usedTokenIds.add(token.id);
+                        added++;
+                        console.log(`✅ Added replacement token: ${token.name} (${token.id})`);
+                    } else {
+                        console.warn(`⚠️ No more unique tokens available for ${category}`);
+                        break;
+                    }
+                }
+                
+                console.log(`✅ Center pool refilled: ${currentCount} → ${gameState.centerPool.length} tokens (added ${added})`);
+                updateTokenPool();
+            } else {
+                console.log(`✅ Center pool already has ${currentCount} tokens (minimum: ${minTokens})`);
+            }
+        }
+
+        function updateTokenPool() {
+            const poolElement = document.getElementById('token-pool');
+            poolElement.innerHTML = '';
+            
+            console.log('Updating token pool:', gameState.centerPool.length, 'tokens');
+            
+            gameState.centerPool.forEach((token, index) => {
+                const tokenElement = document.createElement('div');
+                tokenElement.className = `token token-${token.category}`;
+                
+                const isBlocked = gameState.blockedTokens.some(b => b.tokenIndex === index);
+                if (isBlocked) {
+                    tokenElement.classList.add('blocked');
+                }
+                if (gameState.selectedTokens.includes(index)) {
+                    tokenElement.classList.add('selected');
+                }
+                
+                // Create set badges for the token edges
+                const setBadges = token.sets.slice(0, 4).map((set, i) => {
+                    const positions = ['top', 'right', 'bottom', 'left'];
+                    return `<div class="set-badge-${positions[i]}">${set.slice(0, 3)}</div>`;
+                }).join('');
+                
+                tokenElement.innerHTML = `
+                    <div class="token-category">${token.emoji}</div>
+                    <div class="token-name">${token.name}</div>
+                    ${setBadges}
+                `;
+                
+                tokenElement.onclick = () => selectToken(index);
+                poolElement.appendChild(tokenElement);
+            });
+            
+            document.getElementById('pool-count').textContent = gameState.centerPool.length;
+        }
+
+        function selectToken(index) {
+            const isBlocked = gameState.blockedTokens.some(b => b.tokenIndex === index);
+            if (gameState.phase === 'ranking' && !isBlocked) {
+                if (gameState.selectedTokens.includes(index)) {
+                    gameState.selectedTokens = gameState.selectedTokens.filter(i => i !== index);
+                } else if (gameState.selectedTokens.length < gameState.currentBid) {
+                    gameState.selectedTokens.push(index);
+                }
+                updateTokenPool();
+            }
+        }
+
+        function showBidModal() {
+            // CRITICAL: Check if this player has already passed
+            if (gameState.passedPlayers && gameState.passedPlayers.has(gameState.currentPlayer)) {
+                console.log(`ERROR: ${gameState.players[gameState.currentPlayer].name} already passed, skipping bid modal`);
+                moveToNextBidder();
+                return;
+            }
+            
+            const modal = document.getElementById('bid-modal');
+            const maxBid = calculateMaxBid();
+            const player = gameState.players[gameState.currentPlayer];
+            
+            // Show category and challenge information
+            document.getElementById('bid-category-name').textContent = `${gameState.currentCategory.charAt(0).toUpperCase() + gameState.currentCategory.slice(1)} 🎯`;
+            document.getElementById('bid-challenge-name').textContent = gameState.currentChallenge?.name || 'Challenge';
+            
+            // Show strategic information
+            const hiddenTokens = player.hiddenTokens.filter(t => t.category === gameState.currentCategory);
+            const availableCenter = gameState.centerPool.length - gameState.blockedTokens.length;
+            
+            document.getElementById('bid-amount').max = maxBid;
+            document.getElementById('bid-amount').value = 0;
+            
+            // Add strategic context to bid modal
+            const modalContent = modal.querySelector('.modal-content');
+            const existingStrategy = modalContent.querySelector('.strategy-info');
+            if (existingStrategy) existingStrategy.remove();
+            
+            const strategyDiv = document.createElement('div');
+            strategyDiv.className = 'strategy-info';
+            strategyDiv.innerHTML = `
+                <div style="background: #f0f8ff; padding: 15px; border-radius: 10px; margin: 15px 0;">
+                    <h4>🧠 Strategic Info:</h4>
+                    <p><strong>Your Hidden Tokens:</strong> ${hiddenTokens.length} from ${gameState.currentCategory}</p>
+                    <p><strong>Available Center Tokens:</strong> ${availableCenter} (${gameState.blockedTokens.length} blocked)</p>
+                    <p><strong>Current High Bid:</strong> ${gameState.currentBid || 'None yet'}</p>
+                    <p><strong>Players Passed:</strong> ${gameState.passedPlayers ? Array.from(gameState.passedPlayers).map(i => gameState.players[i].name).join(', ') || 'None' : 'None'}</p>
+                    <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                        💡 Tip: Bid higher if you have hidden tokens that complete sets or are easy to rank!
+                    </div>
+                </div>
+            `;
+            
+            modalContent.insertBefore(strategyDiv, modalContent.querySelector('.controls'));
+            
+            updateBidInfo();
+            modal.classList.add('active');
+        }
+        
+        function closeBidModal() {
+            const modal = document.getElementById('bid-modal');
+            modal.classList.remove('active');
+        }
+
+        function calculateMaxBid() {
+            const player = gameState.players[gameState.currentPlayer];
+            const availableHidden = player.hiddenTokens.filter(t => t.category === gameState.currentCategory).length;
+            const availableCenter = gameState.centerPool.length - gameState.blockedTokens.length;
+            return Math.min(8, availableHidden + availableCenter);
+        }
+
+        function updateBidInfo() {
+            const bidAmount = parseInt(document.getElementById('bid-amount').value);
+            const maxBid = calculateMaxBid();
+            const info = document.getElementById('bid-info');
+            
+            if (bidAmount > gameState.currentBid && bidAmount <= maxBid) {
+                info.textContent = `Valid bid. Current highest: ${gameState.currentBid}`;
+                info.style.color = '#27ae60';
+            } else if (bidAmount <= gameState.currentBid) {
+                info.textContent = `Bid must be higher than ${gameState.currentBid}`;
+                info.style.color = '#e74c3c';
+            } else {
+                info.textContent = `Not enough tokens available (max: ${maxBid})`;
+                info.style.color = '#e74c3c';
+            }
+        }
+
+        function adjustBid(delta) {
+            const input = document.getElementById('bid-amount');
+            const newValue = parseInt(input.value) + delta;
+            if (newValue >= 3 && newValue <= parseInt(input.max)) {
+                input.value = newValue;
+                updateBidInfo();
+            }
+        }
+
+        function submitBid() {
+            const bidAmount = parseInt(document.getElementById('bid-amount').value);
+            
+            if (bidAmount > gameState.currentBid && bidAmount <= calculateMaxBid()) {
+                gameState.currentBid = bidAmount;
+                gameState.highestBidder = gameState.currentPlayer;
+                
+                document.getElementById('bid-modal').classList.remove('active');
+                
+                showNotification(`${gameState.players[gameState.currentPlayer].name} bids ${bidAmount}`, 'info');
+                
+                // Move to next player for bidding
+                moveToNextBidder();
+            }
+        }
+
+        function passBid() {
+            document.getElementById('bid-modal').classList.remove('active');
+            
+            // Mark current player as passed
+            gameState.passedPlayers.add(gameState.currentPlayer);
+            
+            showNotification(`${gameState.players[gameState.currentPlayer].name} passes`, 'info');
+            
+            // Move to next player for bidding
+            moveToNextBidder();
+        }
+        
+        function moveToNextBidder() {
+            // Move to next player
+            gameState.currentPlayer = (gameState.currentPlayer + 1) % gameState.players.length;
+            
+            // Check if bidding should end
+            if (shouldEndBidding()) {
+                startBlockingPhase();
+                return;
+            }
+            
+            // Skip players who have already passed
+            let attempts = 0;
+            while (gameState.passedPlayers.has(gameState.currentPlayer) && attempts < gameState.players.length) {
+                console.log(`Skipping ${gameState.players[gameState.currentPlayer].name} - already passed`);
+                gameState.currentPlayer = (gameState.currentPlayer + 1) % gameState.players.length;
+                attempts++;
+            }
+            
+            // If we've cycled through everyone or found someone who hasn't passed
+            if (attempts >= gameState.players.length || shouldEndBidding()) {
+                startBlockingPhase();
+                return;
+            }
+            
+            updateDisplay();
+            updateBiddingStatus();
+            
+            // Make sure passed players don't get to bid again
+            if (gameState.passedPlayers.has(gameState.currentPlayer)) {
+                console.log(`ERROR: ${gameState.players[gameState.currentPlayer].name} already passed but still in bidding!`);
+                moveToNextBidder();
+                return;
+            }
+            
+            // Continue bidding with next player
+            if (!gameState.players[gameState.currentPlayer].isHuman) {
+                setTimeout(aiMakeBid, 1000);
+            } else {
+                showBidModal();
+            }
+        }
+        
+        function updateBiddingStatus() {
+            const statusDiv = document.getElementById('bidding-status');
+            const infoDiv = document.getElementById('bidding-info');
+            
+            if (gameState.phase === 'bidding') {
+                statusDiv.style.display = 'block';
+                
+                const passedPlayerNames = Array.from(gameState.passedPlayers).map(i => gameState.players[i].name);
+                const currentBidder = gameState.highestBidder !== null ? gameState.players[gameState.highestBidder].name : 'None';
+                
+                infoDiv.innerHTML = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; text-align: center;">
+                        <div style="background: white; padding: 10px; border-radius: 8px;">
+                            <div style="font-size: 12px; color: #666;">Current High Bid</div>
+                            <div style="font-size: 20px; font-weight: bold; color: #e74c3c;">${gameState.currentBid || 0}</div>
+                            <div style="font-size: 12px; color: #666;">by ${currentBidder}</div>
+                        </div>
+                        <div style="background: white; padding: 10px; border-radius: 8px;">
+                            <div style="font-size: 12px; color: #666;">Current Bidder</div>
+                            <div style="font-size: 16px; font-weight: bold; color: #3498db;">${gameState.players[gameState.currentPlayer].name}</div>
+                            <div style="font-size: 12px; color: #666;">Turn ${gameState.round}</div>
+                        </div>
+                        <div style="background: white; padding: 10px; border-radius: 8px;">
+                            <div style="font-size: 12px; color: #666;">Players Passed</div>
+                            <div style="font-size: 14px; font-weight: bold; color: #95a5a6;">${passedPlayerNames.length > 0 ? passedPlayerNames.join(', ') : 'None'}</div>
+                            <div style="font-size: 12px; color: #666;">${passedPlayerNames.length}/${gameState.players.length}</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                statusDiv.style.display = 'none';
+            }
+        }
+        
+        function shouldEndBidding() {
+            // Bidding ends when:
+            // 1. Everyone except the highest bidder has passed, OR
+            // 2. Everyone has passed (no bids made), OR
+            // 3. Only one player hasn't passed
+            
+            const activePlayers = gameState.players.length - gameState.passedPlayers.size;
+            
+            // If no one has bid yet and everyone passed
+            if (gameState.highestBidder === null && gameState.passedPlayers.size === gameState.players.length) {
+                return true;
+            }
+            
+            // If there's a highest bidder and everyone else has passed
+            if (gameState.highestBidder !== null) {
+                const nonPassedPlayers = gameState.players.filter((_, i) => !gameState.passedPlayers.has(i));
+                if (nonPassedPlayers.length === 1 && nonPassedPlayers[0] === gameState.players[gameState.highestBidder]) {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
+        function aiMakeBid() {
+            // CRITICAL: Check if this AI has already passed
+            if (gameState.passedPlayers && gameState.passedPlayers.has(gameState.currentPlayer)) {
+                console.log(`ERROR: ${gameState.players[gameState.currentPlayer].name} (AI) already passed, skipping bid`);
+                moveToNextBidder();
+                return;
+            }
+            
+            const maxBid = calculateMaxBid();
+            
+            // Improved AI: More likely to bid if they have hidden tokens from this category
+            const player = gameState.players[gameState.currentPlayer];
+            const hiddenTokens = player.hiddenTokens.filter(t => t.category === gameState.currentCategory).length;
+            const bidChance = 0.3 + (hiddenTokens * 0.25); // Higher chance with more hidden tokens
+            
+            if (Math.random() < bidChance && maxBid > gameState.currentBid) {
+                const bid = Math.min(maxBid, gameState.currentBid + Math.floor(Math.random() * 2) + 1, 4); // Cap AI bids at 4
+                gameState.currentBid = bid;
+                gameState.highestBidder = gameState.currentPlayer;
+                
+                showNotification(`${gameState.players[gameState.currentPlayer].name} bids ${bid}`, 'info');
+            } else {
+                // AI passes
+                gameState.passedPlayers.add(gameState.currentPlayer);
+                showNotification(`${gameState.players[gameState.currentPlayer].name} passes`, 'info');
+            }
+            
+            // Move to next bidder
+            setTimeout(() => moveToNextBidder(), 1500);
+        }
+
+        function startBlockingPhase() {
+            gameState.phase = 'blocking';
+            gameState.blockedTokens = [];
+            
+            // Start with player after highest bidder
+            gameState.currentPlayer = (gameState.highestBidder + 1) % gameState.players.length;
+            
+            updateDisplay();
+            showNotification(`${gameState.players[gameState.highestBidder].name} won with bid of ${gameState.currentBid}`, 'success');
+            
+            // Start blocking
+            if (gameState.currentPlayer !== gameState.highestBidder) {
+                if (gameState.players[gameState.currentPlayer].isHuman) {
+                    setTimeout(() => showBlockingModal(), 1500);
+                } else {
+                    setTimeout(() => aiBlock(), 1500);
+                }
+            } else {
+                startRankingPhase();
+            }
+        }
+
+        function showBlockingModal() {
+            const modal = document.getElementById('blocking-modal');
+            const container = document.getElementById('blocking-tokens');
+            container.innerHTML = '';
+            
+            const modalContent = modal.querySelector('.modal-content');
+            const existingStrategy = modalContent.querySelector('.blocking-strategy');
+            if (existingStrategy) existingStrategy.remove();
+            
+            const player = gameState.players[gameState.currentPlayer];
+            const winnerName = gameState.players[gameState.highestBidder].name;
+            
+            // Calculate blocking limits
+            const rankingPlayer = gameState.players[gameState.highestBidder];
+            const ownedInCategory = gameState.ownedTokens[rankingPlayer.name]
+                .filter(t => t.category === gameState.currentCategory).length;
+            const hiddenInCategory = rankingPlayer.hiddenTokens
+                .filter(t => t.category === gameState.currentCategory).length;
+            const currentlyBlocked = gameState.blockedTokens.length;
+            const totalAvailable = gameState.centerPool.length + ownedInCategory + hiddenInCategory;
+            const maxBlockable = Math.max(0, totalAvailable - gameState.currentBid);
+            const remainingBlockable = maxBlockable - currentlyBlocked;
+            
+            const strategyDiv = document.createElement('div');
+            strategyDiv.className = 'blocking-strategy';
+            strategyDiv.innerHTML = `
+                <div style="background: #fff0f0; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                    <h4>🛡️ Blocking Strategy:</h4>
+                    <p><strong>${winnerName}</strong> bid <strong>${gameState.currentBid}</strong> tokens</p>
+                    <p><strong>Available to ${winnerName}:</strong> ${gameState.centerPool.length - currentlyBlocked} center + ${ownedInCategory} owned + ${hiddenInCategory} hidden = ${gameState.centerPool.length - currentlyBlocked + ownedInCategory + hiddenInCategory} total</p>
+                    <p><strong>You can block:</strong> Up to ${remainingBlockable} more center tokens</p>
+                    <p><strong>Your chips:</strong> ${player.blockingChips} remaining</p>
+                    <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                        💡 Strategy: Block tokens they need for sets or tokens that would be easy to rank correctly.
+                        If they fail, you get 2 points per chip used!
+                    </div>
+                </div>
+            `;
+            
+            modalContent.insertBefore(strategyDiv, container);
+            
+            gameState.centerPool.forEach((token, index) => {
+                const isBlocked = gameState.blockedTokens.some(b => b.tokenIndex === index);
+                if (!isBlocked) {
+                    const tokenElement = document.createElement('div');
+                    tokenElement.className = `token token-${token.category}`;
+                    
+                    // Show set information for strategic blocking
+                    const setBadges = token.sets.slice(0, 4).map((set, i) => {
+                        const positions = ['top', 'right', 'bottom', 'left'];
+                        return `<div class="set-badge-${positions[i]}">${set.slice(0, 3)}</div>`;
+                    }).join('');
+                    
+                    tokenElement.innerHTML = `
+                        <div class="token-category">${token.emoji}</div>
+                        <div class="token-name">${token.name}</div>
+                        ${setBadges}
+                    `;
+                    tokenElement.onclick = () => blockToken(index);
+                    container.appendChild(tokenElement);
+                }
+            });
+            
+            modal.classList.add('active');
+        }
+
+        function blockToken(index) {
+            const player = gameState.players[gameState.currentPlayer];
+            
+            // Check if token is already blocked
+            const alreadyBlocked = gameState.blockedTokens.some(b => b.tokenIndex === index);
+            
+            // CRITICAL: Check if blocking would make bid impossible
+            // Per rules: "Cannot reduce available tokens below the bid amount"
+            // Must consider: unblocked center tokens + ranking player's owned tokens + hidden tokens
+            const currentlyBlocked = gameState.blockedTokens.length;
+            const centerAvailableAfterBlock = gameState.centerPool.length - currentlyBlocked - 1;
+            
+            // Get the ranking player's tokens from this category (all are public knowledge in count)
+            const rankingPlayer = gameState.players[gameState.highestBidder];
+            const ownedTokensInCategory = gameState.ownedTokens[rankingPlayer.name]
+                .filter(t => t.category === gameState.currentCategory).length;
+            const hiddenTokensInCategory = rankingPlayer.hiddenTokens
+                .filter(t => t.category === gameState.currentCategory).length;
+            
+            const totalAvailableAfterBlock = centerAvailableAfterBlock + ownedTokensInCategory + hiddenTokensInCategory;
+            
+            // We must ensure at least bid amount tokens remain available
+            if (totalAvailableAfterBlock < gameState.currentBid) {
+                showNotification(`Cannot block: Must leave at least ${gameState.currentBid} tokens available (center + owned + hidden)!`, 'error');
+                return;
+            }
+            
+            if (player.blockingChips > 0 && !alreadyBlocked) {
+                // Track both token index AND which player blocked it
+                gameState.blockedTokens.push({
+                    tokenIndex: index,
+                    playerIndex: gameState.currentPlayer
+                });
+                player.blockingChips--;
+                
+                document.getElementById('blocking-modal').classList.remove('active');
+                showNotification(`Blocked ${gameState.centerPool[index].name}`, 'info');
+                
+                moveToNextBlocker();
+            }
+        }
+
+        function skipBlocking() {
+            document.getElementById('blocking-modal').classList.remove('active');
+            moveToNextBlocker();
+        }
+
+        function aiBlock() {
+            const player = gameState.players[gameState.currentPlayer];
+            
+            // Check if blocking would violate the rule
+            const currentlyBlocked = gameState.blockedTokens.length;
+            const centerAvailableAfterBlock = gameState.centerPool.length - currentlyBlocked - 1;
+            
+            // Get the ranking player's tokens from this category (all counts are public knowledge)
+            const rankingPlayer = gameState.players[gameState.highestBidder];
+            const ownedTokensInCategory = gameState.ownedTokens[rankingPlayer.name]
+                .filter(t => t.category === gameState.currentCategory).length;
+            const hiddenTokensInCategory = rankingPlayer.hiddenTokens
+                .filter(t => t.category === gameState.currentCategory).length;
+            
+            const totalAvailableAfterBlock = centerAvailableAfterBlock + ownedTokensInCategory + hiddenTokensInCategory;
+            
+            // Cannot block if it would make bid impossible
+            if (totalAvailableAfterBlock < gameState.currentBid) {
+                console.log(`${player.name} cannot block - would violate minimum tokens rule`);
+                console.log(`Available after block: ${centerAvailableAfterBlock} center + ${ownedTokensInCategory} owned + ${hiddenTokensInCategory} hidden = ${totalAvailableAfterBlock}, needed: ${gameState.currentBid}`);
+                moveToNextBlocker();
+                return;
+            }
+            
+            // Simple AI: 70% chance to block if chips available and legal
+            if (player.blockingChips > 0 && Math.random() < 0.7) {
+                const availableTokens = gameState.centerPool
+                    .map((_, i) => i)
+                    .filter(i => !gameState.blockedTokens.some(b => b.tokenIndex === i));
+                
+                if (availableTokens.length > 0) {
+                    const tokenToBlock = availableTokens[Math.floor(Math.random() * availableTokens.length)];
+                    gameState.blockedTokens.push({
+                        tokenIndex: tokenToBlock,
+                        playerIndex: gameState.currentPlayer
+                    });
+                    player.blockingChips--;
+                    
+                    showNotification(`${player.name} blocked ${gameState.centerPool[tokenToBlock].name}`, 'info');
+                }
+            }
+            
+            setTimeout(() => moveToNextBlocker(), 1000);
+        }
+
+        function moveToNextBlocker() {
+            gameState.currentPlayer = (gameState.currentPlayer + 1) % gameState.players.length;
+            
+            if (gameState.currentPlayer === gameState.highestBidder) {
+                startRankingPhase();
+            } else {
+                updateDisplay();
+                if (gameState.players[gameState.currentPlayer].isHuman) {
+                    showBlockingModal();
+                } else {
+                    setTimeout(() => aiBlock(), 1000);
+                }
+            }
+        }
+
+        function startRankingPhase() {
+            gameState.phase = 'ranking';
+            gameState.currentPlayer = gameState.highestBidder;
+            gameState.selectedTokens = [];
+            
+            // CRITICAL: Check if the bid is still achievable after blocking
+            const player = gameState.players[gameState.currentPlayer];
+            const availableCenter = gameState.centerPool.filter((_, i) => 
+                !gameState.blockedTokens.some(b => b.tokenIndex === i)
+            ).length;
+            const availableHidden = player.hiddenTokens.filter(t => 
+                t.category === gameState.currentCategory
+            ).length;
+            const availableOwned = gameState.ownedTokens[player.name].filter(t => 
+                t.category === gameState.currentCategory
+            ).length;
+            const totalAvailable = availableCenter + availableHidden + availableOwned;
+            
+            if (totalAvailable < gameState.currentBid) {
+                // Bid is now impossible due to blocking!
+                console.log(`⚠️ WARNING: Bid of ${gameState.currentBid} is now impossible!`);
+                console.log(`Available: ${availableCenter} center + ${availableHidden} hidden + ${availableOwned} owned = ${totalAvailable} total`);
+                
+                // Reduce bid to maximum possible
+                const oldBid = gameState.currentBid;
+                gameState.currentBid = totalAvailable;
+                showNotification(`⚠️ Bid reduced from ${oldBid} to ${gameState.currentBid} due to blocking!`, 'warning', true);
+            }
+            
+            updateDisplay();
+            
+            if (gameState.players[gameState.currentPlayer].isHuman) {
+                showRankingModal();
+            } else {
+                setTimeout(() => aiRank(), 2000);
+            }
+        }
+
+        function showRankingModal() {
+            const modal = document.getElementById('ranking-modal');
+            const challengeDiv = document.getElementById('ranking-challenge');
+            const slotsDiv = document.getElementById('ranking-slots');
+            
+            challengeDiv.innerHTML = `
+                <h3>${gameState.currentCategory.toUpperCase()}</h3>
+                <p>${gameState.currentChallenge.name}</p>
+            `;
+            
+            // Get available tokens for ranking
+            const availableTokens = [];
+            
+            // Add unblocked center tokens
+            gameState.centerPool.forEach((token, index) => {
+                const isBlocked = gameState.blockedTokens.some(b => b.tokenIndex === index);
+                if (!isBlocked) {
+                    availableTokens.push({ ...token, sourceIndex: index, source: 'center' });
+                }
+            });
+            
+            // Add hidden tokens from matching category
+            const player = gameState.players[gameState.currentPlayer];
+            player.hiddenTokens.forEach((token, index) => {
+                if (token.category === gameState.currentCategory) {
+                    availableTokens.push({ ...token, sourceIndex: index, source: 'hidden' });
+                }
+            });
+            
+            // Add owned tokens from matching category
+            gameState.ownedTokens[player.name].forEach((token, index) => {
+                if (token.category === gameState.currentCategory) {
+                    availableTokens.push({ ...token, sourceIndex: index, source: 'owned' });
+                }
+            });
+            
+            // Create draggable tokens area
+            const tokensArea = document.createElement('div');
+            tokensArea.innerHTML = '<h4>Available Tokens (drag to rank):</h4>';
+            tokensArea.style.cssText = 'margin: 20px 0; padding: 15px; background: #f8f8f8; border-radius: 10px;';
+            
+            const tokenContainer = document.createElement('div');
+            tokenContainer.style.cssText = 'display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;';
+            
+            availableTokens.forEach((token, index) => {
+                const tokenEl = document.createElement('div');
+                tokenEl.className = `token token-${token.category}`;
+                tokenEl.draggable = true;
+                tokenEl.style.cssText = 'width: 60px; height: 60px; margin: 5px; cursor: grab;';
+                tokenEl.dataset.tokenIndex = index;
+                
+                tokenEl.innerHTML = `
+                    <div style="font-size: 16px;">${token.emoji}</div>
+                    <div style="font-size: 8px;">${token.name}</div>
+                `;
+                
+                tokenEl.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', index);
+                    tokenEl.style.opacity = '0.5';
+                });
+                
+                tokenEl.addEventListener('dragend', () => {
+                    tokenEl.style.opacity = '1';
+                });
+                
+                tokenContainer.appendChild(tokenEl);
+            });
+            
+            tokensArea.appendChild(tokenContainer);
+            
+            // Create ranking slots
+            slotsDiv.innerHTML = '';
+            for (let i = 0; i < gameState.currentBid; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'ranking-slot';
+                slot.innerHTML = `<div class="position">#${i + 1}</div>`;
+                slot.id = `slot-${i}`;
+                slot.dataset.slotIndex = i;
+                
+                // Add drop functionality
+                slot.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    slot.style.background = '#e8f8f0';
+                });
+                
+                slot.addEventListener('dragleave', () => {
+                    slot.style.background = 'white';
+                });
+                
+                slot.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const tokenIndex = e.dataTransfer.getData('text/plain');
+                    const token = availableTokens[tokenIndex];
+                    
+                    // Clear existing content
+                    slot.innerHTML = `
+                        <div class="position">#${i + 1}</div>
+                        <div style="font-size: 14px;">${token.emoji}</div>
+                        <div style="font-size: 8px;">${token.name}</div>
+                    `;
+                    
+                    slot.style.background = 'white';
+                    slot.dataset.tokenData = JSON.stringify(token);
+                    
+                    // Remove token from available tokens display
+                    const draggedToken = document.querySelector(`[data-token-index="${tokenIndex}"]`);
+                    if (draggedToken) draggedToken.style.display = 'none';
+                });
+                
+                slotsDiv.appendChild(slot);
+            }
+            
+            // Store available tokens for validation
+            modal.availableTokens = availableTokens;
+            
+            // Insert tokens area before ranking slots
+            challengeDiv.after(tokensArea);
+            
+            modal.classList.add('active');
+        }
+
+        function validateRanking() {
+            const slots = document.querySelectorAll('.ranking-slot');
+            const rankedTokens = [];
+            
+            // Check if all slots are filled
+            for (let slot of slots) {
+                if (!slot.dataset.tokenData) {
+                    showNotification(`Please fill all ranking positions!`, 'error');
+                    return;
+                }
+                rankedTokens.push(JSON.parse(slot.dataset.tokenData));
+            }
+            
+            if (rankedTokens.length !== gameState.currentBid) {
+                showNotification(`Please rank exactly ${gameState.currentBid} tokens`, 'error');
+                return;
+            }
+            
+            document.getElementById('ranking-modal').classList.remove('active');
+            
+            // Show reveal animation
+            showRankingReveal(rankedTokens);
+        }
+        
+        function showRankingReveal(rankedTokens) {
+            // Create reveal modal
+            const revealModal = document.createElement('div');
+            revealModal.className = 'modal active';
+            revealModal.innerHTML = `
+                <div class="modal-content">
+                    <div style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+                        <div style="font-size: 18px; font-weight: bold;">🎭 Results Phase</div>
+                        <div style="font-size: 14px; opacity: 0.9;">Let's see if the ranking was correct!</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0;">Revealing Rankings...</h2>
+                        <button onclick="this.closest('.modal').remove();" 
+                                style="background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px; color: #666;" 
+                                title="Close">
+                            ×
+                        </button>
+                    </div>
+                    <div class="challenge-card">
+                        <h3>${gameState.currentCategory.toUpperCase()}</h3>
+                        <p>${gameState.currentChallenge.name}</p>
+                    </div>
+                    <div style="background: #f3e5f5; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #9c27b0;">
+                        <h4 style="margin: 0 0 10px 0; color: #6a1b9a;">📊 What's Happening:</h4>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #333;">
+                            <li><strong>Each token reveals</strong> its actual statistic value</li>
+                            <li><strong>If order is correct:</strong> Bidder gets points + all tokens + blocking chips</li>
+                            <li><strong>If order is wrong:</strong> Bidder gets 0 points, blockers win big!</li>
+                            <li><strong>Click "Reveal"</strong> to see each token's real value one by one</li>
+                        </ul>
+                    </div>
+                    <div id="reveal-area" style="text-align: center; margin: 20px 0;">
+                        <div id="reveal-tokens" style="display: flex; gap: 10px; justify-content: center; margin: 20px 0;">
+                        </div>
+                        <div id="reveal-status" style="font-size: 18px; font-weight: bold; margin: 20px 0;">
+                            Click to reveal each ranking...
+                        </div>
+                        <button class="btn" id="reveal-next" onclick="revealNext()">🎯 Reveal #1</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(revealModal);
+            
+            // Setup reveal sequence
+            window.currentReveal = {
+                tokens: rankedTokens,
+                index: 0,
+                correct: true,
+                stat: gameState.currentChallenge.stat
+            };
+            
+            // Create token display area
+            const tokenArea = document.getElementById('reveal-tokens');
+            rankedTokens.forEach((token, i) => {
+                const tokenEl = document.createElement('div');
+                tokenEl.className = `token token-${token.category}`;
+                tokenEl.style.cssText = 'width: 60px; height: 60px; opacity: 0.3;';
+                tokenEl.innerHTML = `
+                    <div>${token.emoji}</div>
+                    <div style="font-size: 8px;">${token.name}</div>
+                    <div style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: bold;">#${i+1}</div>
+                `;
+                tokenEl.id = `reveal-token-${i}`;
+                tokenArea.appendChild(tokenEl);
+            });
+        }
+        
+        window.revealNext = function() {
+            const reveal = window.currentReveal;
+            const token = reveal.tokens[reveal.index];
+            const statValue = token.stats[reveal.stat];
+            const unit = gameState.currentChallenge.unit;
+            
+            // Highlight current token
+            const tokenEl = document.getElementById(`reveal-token-${reveal.index}`);
+            tokenEl.style.opacity = '1';
+            tokenEl.style.transform = 'scale(1.1)';
+            
+            // Show stat value
+            const statusEl = document.getElementById('reveal-status');
+            statusEl.innerHTML = `
+                <div style="color: #764ba2;">#${reveal.index + 1}: ${token.name}</div>
+                <div style="font-size: 24px; margin: 10px 0;">${statValue} ${unit}</div>
+            `;
+            
+            // Check if this position is correct
+            if (reveal.index > 0) {
+                const prevValue = reveal.tokens[reveal.index - 1].stats[reveal.stat];
+                if (statValue < prevValue) {
+                    reveal.correct = false;
+                    statusEl.innerHTML += '<div style="color: #e74c3c; font-size: 16px;">❌ WRONG ORDER!</div>';
+                } else {
+                    statusEl.innerHTML += '<div style="color: #27ae60; font-size: 16px;">✅ Correct so far!</div>';
+                }
+            } else {
+                statusEl.innerHTML += '<div style="color: #27ae60; font-size: 16px;">✅ First position!</div>';
+            }
+            
+            reveal.index++;
+            
+            const nextBtn = document.getElementById('reveal-next');
+            if (reveal.index < reveal.tokens.length) {
+                nextBtn.textContent = `Reveal #${reveal.index + 1}`;
+            } else {
+                nextBtn.textContent = 'Finish Ranking';
+                nextBtn.onclick = () => {
+                    finishRanking(reveal.correct, reveal.tokens);
+                };
+                
+                // Also update the close button to finish ranking
+                const closeBtn = document.querySelector('.modal button[title="Close and continue"]');
+                if (closeBtn) {
+                    closeBtn.onclick = () => {
+                        finishRanking(reveal.correct, reveal.tokens);
+                    };
+                }
+            }
+        };
+        
+        function finishRanking(correct, rankedTokens) {
+            // Remove reveal modal
+            document.querySelector('.modal').remove();
+            
+            const player = gameState.players[gameState.currentPlayer];
+            
+            if (correct) {
+                // Success!
+                const points = gameState.currentBid;
+                gameState.scores[player.name] += points;
+                
+                // Collect blocked chips from other players (winner gets blocked chips)
+                gameState.players.forEach((p, i) => {
+                    if (i !== gameState.currentPlayer) {
+                        const chipsUsed = 2 - p.blockingChips; // Changed from 3 to 2
+                        if (chipsUsed > 0) {
+                            // Winner gets the chips that were used against them
+                            player.blockingChips += chipsUsed;
+                            // Blockers lose their chips (they're transferred to winner)
+                        }
+                    }
+                });
+                
+                // Add tokens to player's owned collection
+                rankedTokens.forEach(token => {
+                    if (!gameState.ownedTokens[player.name].find(t => t.id === token.id)) {
+                        gameState.ownedTokens[player.name].push(token);
+                    }
+                });
+                
+                // Show which sets they're building
+                const newSets = {};
+                gameState.ownedTokens[player.name].forEach(token => {
+                    token.sets.forEach(set => {
+                        if (!newSets[set]) newSets[set] = 0;
+                        newSets[set]++;
+                    });
+                });
+                
+                const setProgress = Object.entries(newSets)
+                    .filter(([set, count]) => count >= 2)
+                    .map(([set, count]) => `${set}(${count})`)
+                    .slice(0, 3)
+                    .join(', ');
+                
+                showNotification(`🎉 Success! ${player.name} earned ${points} points!${setProgress ? `\n🏆 Building sets: ${setProgress}` : ''}`, 'success', true);
+            } else {
+                // Failure
+                showNotification(`❌ Wrong order! ${player.name} scores no points.`, 'error');
+                
+                // Blockers get points for successful blocks and keep their chips
+                // ALSO get ownership of blocked tokens
+                let blockingPoints = 0;
+                let blockersWithTokens = [];
+                
+                gameState.blockedTokens.forEach(block => {
+                    // Each blocker gets 2 points per chip used
+                    const blocker = gameState.players[block.playerIndex];
+                    const pointsForThisBlock = 2;
+                    gameState.scores[blocker.name] += pointsForThisBlock;
+                    blockingPoints += pointsForThisBlock;
+                    
+                    // Transfer the blocked token to this player's collection
+                    const blockedToken = gameState.centerPool[block.tokenIndex];
+                    console.log(`🛡️ BLOCKING TRANSFER: Block index ${block.tokenIndex}, token:`, blockedToken);
+                    console.log(`🛡️ Current center pool:`, gameState.centerPool.map(t => `${t.name}(${t.id})`));
+                    if (blockedToken && !gameState.ownedTokens[blocker.name].find(t => t.id === blockedToken.id)) {
+                        gameState.ownedTokens[blocker.name].push({...blockedToken});
+                        blockersWithTokens.push(`${blocker.name} gets ${blockedToken.name}`);
+                        console.log(`✅ Successfully transferred ${blockedToken.name} to ${blocker.name}`);
+                    } else {
+                        console.log(`❌ Failed to transfer token at index ${block.tokenIndex}:`, blockedToken ? 'Already owned' : 'Token not found');
+                    }
+                    
+                    // Blockers keep their chips (no transfer) per rules
+                });
+                
+                if (blockingPoints > 0) {
+                    showNotification(`🛡️ Blockers earned ${blockingPoints} total points!`, 'info');
+                }
+                if (blockersWithTokens.length > 0) {
+                    showNotification(`🏆 Tokens acquired: ${blockersWithTokens.join(', ')}`, 'info');
+                }
+            }
+            
+            // Handle token removal based on success/failure
+            if (correct) {
+                // SUCCESS: Transfer all blocking chips to the successful ranking player
+                const successfulPlayer = gameState.players[gameState.currentPlayer];
+                let chipsTransferred = 0;
+                const chipsFromPlayers = [];
+                
+                gameState.blockedTokens.forEach(block => {
+                    const blocker = gameState.players[block.playerIndex];
+                    // Each block represents one chip used, transfer it to successful player
+                    successfulPlayer.blockingChips++;
+                    chipsTransferred++;
+                    chipsFromPlayers.push(blocker.name);
+                });
+                
+                if (chipsTransferred > 0) {
+                    const uniquePlayers = [...new Set(chipsFromPlayers)];
+                    showNotification(`🏆 ${successfulPlayer.name} receives ${chipsTransferred} blocking chip${chipsTransferred > 1 ? 's' : ''} from ${uniquePlayers.join(', ')}!`, 'success');
+                }
+                
+                // Remove successfully ranked tokens and mark as used
+                rankedTokens.forEach(token => {
+                    console.log(`🏆 SUCCESS: Marking token ${token.name} (${token.id}) as permanently used`);
+                    gameState.usedTokenIds.add(token.id);
+                    if (token.source === 'center') {
+                        const index = gameState.centerPool.findIndex(t => t.id === token.id);
+                        if (index !== -1) {
+                            gameState.centerPool.splice(index, 1);
+                            console.log(`✅ Removed ${token.name} from center pool`);
+                        }
+                    } else if (token.source === 'hidden') {
+                        const playerTokens = gameState.players[gameState.currentPlayer].hiddenTokens;
+                        const index = playerTokens.findIndex(t => t.id === token.id);
+                        if (index !== -1) {
+                            playerTokens.splice(index, 1);
+                            console.log(`✅ Removed ${token.name} from ${gameState.players[gameState.currentPlayer].name}'s hidden tokens`);
+                        }
+                    }
+                    // Owned tokens stay owned, just used for ranking
+                    console.log(`📊 Token ${token.id} now in usedTokenIds:`, gameState.usedTokenIds.has(token.id));
+                });
+            } else {
+                // FAILURE: Tokens remain in center pool per rules
+                // Only remove hidden tokens that were used
+                rankedTokens.forEach(token => {
+                    if (token.source === 'hidden') {
+                        const playerTokens = gameState.players[gameState.currentPlayer].hiddenTokens;
+                        const index = playerTokens.findIndex(t => t.id === token.id);
+                        if (index !== -1) {
+                            playerTokens.splice(index, 1);
+                        }
+                    }
+                    // Center pool tokens STAY in the pool when ranking fails
+                });
+                
+                // Remove only the blocked tokens that were transferred to blockers
+                // Sort in reverse order to remove from end first
+                const blockedIndices = gameState.blockedTokens
+                    .map(b => b.tokenIndex)
+                    .sort((a, b) => b - a);
+                
+                blockedIndices.forEach(tokenIndex => {
+                    if (tokenIndex < gameState.centerPool.length) {
+                        const removedToken = gameState.centerPool[tokenIndex];
+                        gameState.usedTokenIds.add(removedToken.id);
+                        gameState.centerPool.splice(tokenIndex, 1);
+                    }
+                });
+            }
+            
+            // Refill center pool back to 6 tokens
+            refillCenterPool();
+            
+            setTimeout(() => nextRound(), 4000);
+        }
+
+        function aiRank() {
+            // AI randomly succeeds 60% of the time
+            const success = Math.random() < 0.6;
+            const player = gameState.players[gameState.currentPlayer];
+            
+            if (success) {
+                const points = gameState.currentBid;
+                gameState.scores[player.name] += points;
+                showNotification(`${player.name} successfully ranked ${gameState.currentBid} tokens!`, 'success');
+            } else {
+                showNotification(`${player.name} failed to rank correctly!`, 'error');
+                
+                // Blockers get points
+                gameState.players.forEach((p, i) => {
+                    if (i !== gameState.currentPlayer) {
+                        const chipsUsed = 3 - p.blockingChips;
+                        if (chipsUsed > 0) {
+                            gameState.scores[p.name] += chipsUsed * 2;
+                        }
+                    }
+                });
+            }
+            
+            // Remove some tokens
+            const tokensToRemove = Math.min(gameState.currentBid, gameState.centerPool.length);
+            gameState.centerPool.splice(0, tokensToRemove);
+            
+            setTimeout(() => nextRound(), 2000);
+        }
+
+        function nextRound() {
+            // Prevent multiple calls
+            if (gameState.phase === 'challenge') {
+                console.log('⚠️ nextRound() called but already in challenge phase, ignoring');
+                return;
+            }
+            
+            console.log(`🔄 Starting next round: ${gameState.round} → ${gameState.round + 1}`);
+            gameState.round++;
+            gameState.phase = 'challenge';
+            gameState.currentPlayer = (gameState.currentPlayer + 1) % gameState.players.length;
+            
+            // Clear state for next round
+            gameState.blockedTokens = [];
+            gameState.selectedTokens = [];
+            gameState.passedPlayers = new Set();
+            
+            console.log(`✅ Round ${gameState.round} initialized, current player: ${gameState.players[gameState.currentPlayer].name}`);
+            
+            // Clear center pool so it gets refreshed with new challenge
+            gameState.centerPool = [];
+            
+            console.log(`Round ${gameState.round} starting, center pool cleared for new challenge`);
+            
+            generateChallengeCards();
+            updateDisplay();
+            
+            // Check for game end
+            if (gameState.round > 8) { // Shorter game for prototype
+                endGame();
+            }
+        }
+
+        // Rules modal functions
+        window.showGameRules = function() {
+            document.getElementById('rules-modal').classList.add('active');
+        };
+        
+        window.closeRulesModal = function() {
+            document.getElementById('rules-modal').classList.remove('active');
+        };
+        
+        function endGame() {
+            // Calculate final scores including set bonuses
+            let finalScores = {};
+            let setBreakdown = {};
+            
+            gameState.players.forEach(player => {
+                let score = gameState.scores[player.name];
+                setBreakdown[player.name] = { base: score, sets: {} };
+                
+                // Count sets
+                const sets = {};
+                gameState.collectedSets[player.name].forEach(token => {
+                    token.sets.forEach(set => {
+                        if (!sets[set]) sets[set] = 0;
+                        sets[set]++;
+                    });
+                });
+                
+                // Calculate set bonuses
+                let setBonuses = 0;
+                Object.entries(sets).forEach(([setName, count]) => {
+                    if (count >= 3) {
+                        setBonuses += 5;
+                        setBreakdown[player.name].sets[setName] = { count, bonus: 5 };
+                    }
+                    if (count >= 5) {
+                        setBonuses += 10; // Additional 10 (15 total)
+                        setBreakdown[player.name].sets[setName] = { count, bonus: 15 };
+                    }
+                    if (count >= 7) {
+                        setBonuses += 10; // Additional 10 (25 total)
+                        setBreakdown[player.name].sets[setName] = { count, bonus: 25 };
+                    }
+                });
+                
+                // Add remaining blocking chips as points (end game bonus)
+                const chipBonus = gameState.players.find(p => p.name === player.name).blockingChips;
+                
+                finalScores[player.name] = score + setBonuses + chipBonus;
+                setBreakdown[player.name].setBonuses = setBonuses;
+                setBreakdown[player.name].chipBonus = chipBonus;
+            });
+            
+            // Create detailed results modal
+            const resultsModal = document.createElement('div');
+            resultsModal.className = 'modal active';
+            
+            const winner = Object.entries(finalScores).sort((a, b) => b[1] - a[1])[0];
+            
+            let resultsHTML = `
+                <div class="modal-content" style="max-width: 700px;">
+                    <h2>🏆 Game Over!</h2>
+                    <div style="text-align: center; margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border-radius: 15px;">
+                        <h3>🎉 Winner: ${winner[0]}</h3>
+                        <div style="font-size: 24px; font-weight: bold;">${winner[1]} Points</div>
+                    </div>
+                    
+                    <h3>Final Scores & Breakdown:</h3>
+                    <div style="display: grid; gap: 15px; margin: 20px 0;">
+            `;
+            
+            Object.entries(finalScores)
+                .sort((a, b) => b[1] - a[1])
+                .forEach(([name, score]) => {
+                    const breakdown = setBreakdown[name];
+                    const isWinner = name === winner[0];
+                    
+                    resultsHTML += `
+                        <div style="background: ${isWinner ? '#e8f8f0' : '#f8f8f8'}; padding: 15px; border-radius: 10px; border: ${isWinner ? '3px solid #27ae60' : '2px solid #ddd'};">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <strong style="font-size: 18px;">${name}</strong>
+                                <strong style="font-size: 20px; color: #764ba2;">${score} points</strong>
+                            </div>
+                            <div style="font-size: 14px; color: #666; display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 5px;">
+                                <div>Base Score: ${breakdown.base}</div>
+                                <div>Set Bonuses: +${breakdown.setBonuses}</div>
+                                <div>Chip Bonus: +${breakdown.chipBonus}</div>
+                            </div>
+                            ${
+                                Object.keys(breakdown.sets).length > 0 ? 
+                                `<div style="margin-top: 8px; font-size: 12px;">
+                                    <strong>Sets:</strong> ${Object.entries(breakdown.sets).map(([set, data]) => `${set}(${data.count}) +${data.bonus}`).join(', ')}
+                                </div>` : ''
+                            }
+                        </div>
+                    `;
+                });
+            
+            resultsHTML += `
+                    </div>
+                    <div style="text-align: center; margin: 20px 0;">
+                        <button class="btn" onclick="startNewGame(); this.closest('.modal').remove();">Play Again</button>
+                    </div>
+                </div>
+            `;
+            
+            resultsModal.innerHTML = resultsHTML;
+            document.body.appendChild(resultsModal);
+        }
+
+        function updateDisplay() {
+            // Update header info
+            document.getElementById('round-number').textContent = gameState.round;
+            document.getElementById('current-phase').textContent = gameState.phase.charAt(0).toUpperCase() + gameState.phase.slice(1);
+            document.getElementById('current-player').textContent = gameState.players[gameState.currentPlayer].name;
+            document.getElementById('phase-title').textContent = getPhaseTitle();
+            
+            // Update bidding status if in bidding phase
+            updateBiddingStatus();
+            
+            // Update player list
+            const playerList = document.getElementById('player-list');
+            playerList.innerHTML = '';
+            
+            gameState.players.forEach((player, index) => {
+                const playerCard = document.createElement('div');
+                playerCard.className = 'player-card';
+                if (index === gameState.currentPlayer) {
+                    playerCard.classList.add('current-turn');
+                }
+                if (index === gameState.highestBidder) {
+                    playerCard.classList.add('active');
+                }
+                // Show passed players in red during bidding
+                if (gameState.phase === 'bidding' && gameState.passedPlayers && gameState.passedPlayers.has(index)) {
+                    playerCard.classList.add('passed');
+                }
+                
+                playerCard.innerHTML = `
+                    <div class="player-name">${player.name}</div>
+                    <div class="player-stats">
+                        <div>Score: ${gameState.scores[player.name]}</div>
+                        <div>Chips: ${player.blockingChips}</div>
+                        <div>Tokens: ${player.hiddenTokens.length}</div>
+                        <div>Owned: ${gameState.ownedTokens[player.name].length}</div>
+                    </div>
+                `;
+                
+                playerList.appendChild(playerCard);
+            });
+            
+            // Update human player's hidden tokens
+            if (gameState.players[0].isHuman) {
+                const hiddenDiv = document.getElementById('hidden-tokens');
+                hiddenDiv.innerHTML = '';
+                
+                gameState.players[0].hiddenTokens.forEach(token => {
+                    const tokenElement = document.createElement('div');
+                    tokenElement.className = `mini-token token-${token.category}`;
+                    
+                    // Create mini set badges
+                    const setBadges = token.sets.slice(0, 2).map((set, i) => {
+                        return `<div class="mini-set-badge">${set.slice(0, 2)}</div>`;
+                    }).join('');
+                    
+                    tokenElement.innerHTML = `
+                        <div>${token.emoji}</div>
+                        <div style="font-size: 8px;">${token.name}</div>
+                        ${setBadges}
+                    `;
+                    hiddenDiv.appendChild(tokenElement);
+                });
+                
+                // Update blocking chips
+                const chipsDiv = document.getElementById('blocking-chips');
+                chipsDiv.innerHTML = '';
+                
+                for (let i = 0; i < gameState.players[0].blockingChips; i++) {
+                    const chip = document.createElement('div');
+                    chip.className = 'chip';
+                    chip.textContent = '2';
+                    chip.title = 'Blocking Chip - Use to block opponent tokens';
+                    chipsDiv.appendChild(chip);
+                }
+                
+                // Show total chips in game for reference
+                if (gameState.players[0].blockingChips === 0) {
+                    const noChips = document.createElement('div');
+                    noChips.style.cssText = 'color: #666; font-size: 12px; text-align: center; margin-top: 10px;';
+                    noChips.textContent = 'No blocking chips remaining';
+                    chipsDiv.appendChild(noChips);
+                }
+                
+                // Update owned tokens display
+                const setsDiv = document.getElementById('sets-display');
+                setsDiv.innerHTML = '<h3 style="margin-bottom: 10px;">Your Owned Tokens:</h3>';
+                
+                // Show actual owned tokens
+                const ownedTokensContainer = document.createElement('div');
+                ownedTokensContainer.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 8px; margin-bottom: 15px;';
+                
+                gameState.ownedTokens[gameState.players[0].name].forEach(token => {
+                    const tokenEl = document.createElement('div');
+                    tokenEl.className = `mini-token token-${token.category}`;
+                    tokenEl.style.cssText += 'width: 50px; height: 50px; font-size: 8px;';
+                    tokenEl.innerHTML = `
+                        <div style="font-size: 14px;">${token.emoji}</div>
+                        <div style="font-size: 7px;">${token.name}</div>
+                    `;
+                    ownedTokensContainer.appendChild(tokenEl);
+                });
+                
+                setsDiv.appendChild(ownedTokensContainer);
+                
+                // Show set progress
+                const setsTitle = document.createElement('h4');
+                setsTitle.textContent = 'Set Progress:';
+                setsTitle.style.marginBottom = '10px';
+                setsDiv.appendChild(setsTitle);
+                
+                const sets = {};
+                gameState.ownedTokens[gameState.players[0].name].forEach(token => {
+                    token.sets.forEach(set => {
+                        if (!sets[set]) sets[set] = 0;
+                        sets[set]++;
+                    });
+                });
+                
+                Object.entries(sets).forEach(([setName, count]) => {
+                    const setBadge = document.createElement('div');
+                    setBadge.className = 'set-badge';
+                    setBadge.style.cssText = 'margin-bottom: 5px; padding: 5px 8px; font-size: 11px;';
+                    
+                    // Color code by bonus level
+                    let bgColor = '#e8f8f0'; // 1-2 tokens
+                    if (count >= 3) bgColor = '#d4edda'; // 3+ tokens (+5 points)
+                    if (count >= 5) bgColor = '#c3e6cb'; // 5+ tokens (+15 points)
+                    if (count >= 7) bgColor = '#b1dfbb'; // 7+ tokens (+25 points)
+                    
+                    setBadge.style.backgroundColor = bgColor;
+                    setBadge.style.border = count >= 3 ? '2px solid #27ae60' : '1px solid #ccc';
+                    
+                    const bonus = count >= 7 ? '+25' : count >= 5 ? '+15' : count >= 3 ? '+5' : '';
+                    setBadge.textContent = `${setName} (${count})${bonus ? ' ' + bonus : ''}`;
+                    setsDiv.appendChild(setBadge);
+                });
+            }
+            
+            updateTokenPool();
+            updateActionButton();
+        }
+
+        function getPhaseTitle() {
+            switch (gameState.phase) {
+                case 'setup': return 'Game Setup';
+                case 'challenge': return 'Select Challenge';
+                case 'bidding': return 'Bidding Phase';
+                case 'blocking': return 'Blocking Phase';
+                case 'ranking': return 'Ranking Phase';
+                default: return 'Game in Progress';
+            }
+        }
+
+        function updateActionButton() {
+            const btn = document.getElementById('action-btn');
+            const passBtn = document.getElementById('pass-btn');
+            
+            switch (gameState.phase) {
+                case 'setup':
+                    btn.textContent = 'Start Game';
+                    btn.onclick = () => { gameState.phase = 'challenge'; updateDisplay(); };
+                    passBtn.style.display = 'none';
+                    break;
+                case 'challenge':
+                    btn.textContent = 'Select Challenge';
+                    btn.disabled = true;
+                    passBtn.style.display = 'none';
+                    break;
+                case 'bidding':
+                    if (gameState.players[gameState.currentPlayer].isHuman) {
+                        // Check if current player has already passed
+                        if (gameState.passedPlayers && gameState.passedPlayers.has(gameState.currentPlayer)) {
+                            btn.textContent = 'Already Passed';
+                            btn.disabled = true;
+                            btn.onclick = null;
+                        } else {
+                            btn.textContent = 'Place Bid';
+                            btn.disabled = false;
+                            btn.onclick = showBidModal;
+                        }
+                    } else {
+                        btn.textContent = 'AI Bidding...';
+                        btn.disabled = true;
+                    }
+                    passBtn.style.display = 'none';
+                    break;
+                case 'blocking':
+                    if (gameState.players[gameState.currentPlayer].isHuman && gameState.currentPlayer !== gameState.highestBidder) {
+                        btn.textContent = 'Block Token';
+                        btn.onclick = showBlockingModal;
+                    } else {
+                        btn.textContent = 'Blocking...';
+                        btn.disabled = true;
+                    }
+                    passBtn.style.display = 'none';
+                    break;
+                case 'ranking':
+                    if (gameState.players[gameState.currentPlayer].isHuman) {
+                        btn.textContent = 'Start Ranking';
+                        btn.onclick = showRankingModal;
+                    } else {
+                        btn.textContent = 'AI Ranking...';
+                        btn.disabled = true;
+                    }
+                    passBtn.style.display = 'none';
+                    break;
+            }
+        }
+
+        function handleMainAction() {
+            // This is handled by updateActionButton
+        }
+
+        function handlePass() {
+            // Pass functionality
+        }
+
+        function showNotification(message, type = 'info', showCloseButton = false) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            if (showCloseButton) {
+                notification.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                        <div style="flex: 1;">${message}</div>
+                        <button onclick="this.closest('.notification').remove()" 
+                                style="background: none; border: none; font-size: 18px; cursor: pointer; padding: 0; color: inherit;">
+                            ×
+                        </button>
+                    </div>
+                `;
+            } else {
+                notification.textContent = message;
+            }
+            
+            document.body.appendChild(notification);
+            
+            if (!showCloseButton) {
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            }
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function startNewGame() {
+            gameState = {
+                players: [],
+                currentPlayer: 0,
+                round: 1,
+                phase: 'setup',
+                currentChallenge: null,
+                currentCategory: null,
+                tokenPools: {
+                    countries: [],
+                    movies: [],
+                    sports: [],
+                    companies: []
+                },
+                centerPool: [],
+                currentBid: 0,
+                highestBidder: null,
+                selectedTokens: [],
+                blockedTokens: [], // Array of {tokenIndex, playerIndex} objects
+                scores: {},
+                ownedTokens: {},
+                usedTokenIds: new Set(),
+                totalBlockingChips: 0
+            };
+            
+            initGame();
+        }
+
+        // Start the game on load
+        window.onload = () => {
+            initGame();
+        };
+    </script>
+</body>
+</html>
