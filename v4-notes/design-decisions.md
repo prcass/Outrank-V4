@@ -246,6 +246,73 @@ Medium Pool (13 start, min 8 refill) - Option 2
 
 ---
 
+### Decision #6
+**Date**: 2025-09-30
+**Topic**: V4 Scoring System - Points Per Guess + Bonuses
+
+**Context**:
+Need to create a scoring system that rewards both successful guessing and strategic play. V3 had complex scoring (ranking points, blocking points, set bonuses). V4 needs simpler, more immediate feedback.
+
+**Options Considered**:
+1. **Only Set Scoring**:
+   - Pros: Simple, focuses on collection goal
+   - Cons: No immediate feedback, discourages aggressive play
+
+2. **Points Per Guess + Set Scoring**:
+   - Pros: Immediate reward, encourages participation, multiple scoring paths
+   - Cons: More complex tracking
+
+3. **Winner-Takes-All Each Round**:
+   - Pros: Simple, dramatic
+   - Cons: Discourages participation if behind, swingy
+
+**Decision**:
+Points Per Guess + Set Scoring + Bonuses - Option 2
+
+**Scoring Breakdown**:
+
+**During Play:**
+- **1 point per correct guess**: Immediate reward for successful higher/lower calls
+- **1 bonus point**: Last player to pass in round (encourages staying in)
+- **Cash out sets**: 2 tokens = 2pts, 3 tokens = 5pts, 4 tokens = 8pts (anytime on your turn)
+
+**Turn Order Benefit:**
+- **First Guesser privilege**: First player to pass OR guess wrong becomes first guesser next round
+
+**End Game:**
+- **Uncashed tokens = 0 points**: Must cash during game to score
+
+**Critical Mechanic - Wrong Guess:**
+- **Lose tokens** collected this round → back to center pool
+- **Keep points** earned from correct guesses that round
+- This separation is KEY: rewards risk-taking while still having consequences
+
+**Rationale**:
+- Immediate feedback (1pt per guess) keeps players engaged
+- Points are safe even if you lose tokens = encourages aggressive play
+- Last standing bonus = strategic tension (keep going or pass?)
+- First guesser advantage = consolation for passing/failing early
+- Set cashing = strategic timing decisions (cash now vs. build bigger set?)
+- Uncashed = 0 = forces action, prevents hoarding
+
+**Impact**:
+- Player Experience: Multiple scoring paths, constant engagement, risk feels manageable
+- Implementation: Track points separate from tokens, round bonuses, turn order
+- Balance: Rewards both aggressive guessing AND conservative set building
+
+**Strategic Implications**:
+- **Aggressive players**: Rack up guess points, accept token loss risk
+- **Conservative players**: Cash out frequently for guaranteed set points
+- **Risk management**: Keep guessing for points but protect valuable tokens by cashing
+- **First guesser**: Sometimes beneficial to pass early for position advantage
+- **Last standing**: Stay in for bonus if you think others will fold
+
+**Implemented In**:
+- Files: TBD
+- Commit: TBD
+
+---
+
 ## Deferred Decisions
 
 ### Game End Condition

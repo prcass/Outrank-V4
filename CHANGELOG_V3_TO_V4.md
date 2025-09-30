@@ -144,10 +144,21 @@ V4 represents a major gameplay overhaul, replacing the complex bidding/blocking/
 - End-game: Set bonuses (2-10 points) + 1 per owned token + 1 per remaining chip
 
 ### V4 Scoring:
-- No ranking points
-- No blocking points
-- Active cash-out: 2 tokens = 2pts, 3 tokens = 5pts, 4 tokens = 8pts
-- End-game: Only previously cashed points count, uncashed tokens = 0
+**During Play:**
+- **1 point per correct guess**: Immediate reward for each successful higher/lower call
+- **1 bonus point**: Last player to pass in round
+- **Cash out sets**: 2 tokens = 2pts, 3 tokens = 5pts, 4 tokens = 8pts (anytime on your turn)
+
+**Turn Order:**
+- **First Guesser privilege**: First player to pass OR guess wrong goes first next round
+
+**Wrong Guess:**
+- **Lose tokens** from this round (back to center pool)
+- **Keep points** earned from correct guesses (KEY: separates points from tokens)
+
+**End Game:**
+- Only previously cashed points count
+- Uncashed tokens = 0 points
 
 ---
 
