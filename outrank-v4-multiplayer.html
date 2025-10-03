@@ -3,9 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Outrank V4 - Draft & Guess Prototype</title>
+    <title>Outrank V4 - Multiplayer Edition</title>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+
     <!-- Load external token dataset with cache buster -->
     <script src="v4_token_datasets.js?v=7"></script>
+
+    <!-- Firebase configuration and managers -->
+    <script src="firebase-config.js"></script>
+    <script src="game-mode-manager.js"></script>
+    <script src="room-manager.js"></script>
     <style>
         /* ===== BASE STYLES ===== */
         * {
@@ -76,6 +87,12 @@
         .btn-primary {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
         }
 
         .btn-secondary {
@@ -573,10 +590,156 @@
     </style>
 </head>
 <body>
+    <!-- Mode Indicator -->
+    <div id="modeIndicator" style="position: fixed; top: 10px; right: 10px;
+                                    padding: 8px 15px; border-radius: 20px;
+                                    background: #667eea; color: white;
+                                    font-size: 12px; font-weight: bold;
+                                    z-index: 1000; display: none;">
+        <span id="modeText">🏠 Local</span>
+    </div>
+
     <div class="container">
 
-        <!-- SETUP SCREEN -->
-        <div id="setupScreen" class="screen active">
+        <!-- MODE SELECTION SCREEN -->
+        <div id="modeSelectionScreen" class="screen active">
+            <div class="header">
+                <h1>Outrank V4</h1>
+                <p class="subtitle">Multiplayer Edition</p>
+            </div>
+
+            <div class="setup-content">
+                <h2 style="color: #764ba2; margin-bottom: 30px;">How do you want to play?</h2>
+
+                <button class="btn btn-primary" onclick="selectGameMode('local')"
+                        style="width: 100%; margin: 15px 0; padding: 25px; font-size: 18px;">
+                    🏠 Local Multiplayer
+                    <div style="font-size: 14px; margin-top: 8px; opacity: 0.9; font-weight: normal;">
+                        Play on this device (pass and play)
+                    </div>
+                </button>
+
+                <button class="btn btn-primary" onclick="selectGameMode('online')"
+                        style="width: 100%; margin: 15px 0; padding: 25px; font-size: 18px;">
+                    🌐 Online Multiplayer
+                    <div style="font-size: 14px; margin-top: 8px; opacity: 0.9; font-weight: normal;">
+                        Play with friends on different devices
+                    </div>
+                </button>
+
+                <div style="background: #f0f0f0; padding: 20px; border-radius: 10px;
+                           margin-top: 30px; font-size: 14px; line-height: 1.6;">
+                    <div style="margin-bottom: 15px;">
+                        <strong>🏠 Local Multiplayer:</strong><br>
+                        • Play on this device<br>
+                        • Pass and play between players<br>
+                        • No internet required<br>
+                        • Great for family game nights
+                    </div>
+                    <div>
+                        <strong>🌐 Online Multiplayer:</strong><br>
+                        • Each player on their own device<br>
+                        • Play with friends anywhere<br>
+                        • Internet required<br>
+                        • Create or join with room code
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ONLINE SETUP SCREEN -->
+        <div id="onlineSetupScreen" class="screen">
+            <div class="header">
+                <h1>Outrank V4 - Online</h1>
+                <p class="subtitle">Connect with Friends</p>
+            </div>
+
+            <div class="setup-content">
+                <h2 style="color: #764ba2; margin-bottom: 20px;">Join or Create Game</h2>
+
+                <div class="form-group">
+                    <label for="playerName">Your Name</label>
+                    <input type="text" id="playerName" maxlength="20" placeholder="Enter your name">
+                </div>
+
+                <button class="btn btn-primary" onclick="createNewGame()"
+                        style="width: 100%; margin: 20px 0;">
+                    Create New Game
+                </button>
+
+                <div style="text-align: center; margin: 20px 0; color: #666;">
+                    - OR -
+                </div>
+
+                <div class="form-group">
+                    <label for="roomCode">Room Code</label>
+                    <input type="text" id="roomCode" maxlength="6" placeholder="Enter 6-character code"
+                           style="text-transform: uppercase;">
+                </div>
+
+                <button class="btn btn-primary" onclick="joinExistingGame()"
+                        style="width: 100%; margin: 10px 0;">
+                    Join Game
+                </button>
+
+                <button class="btn btn-secondary" onclick="backToModeSelection()"
+                        style="width: 100%; margin: 20px 0;">
+                    ← Back
+                </button>
+            </div>
+        </div>
+
+        <!-- LOBBY SCREEN (Online Mode) -->
+        <div id="lobbyScreen" class="screen">
+            <div class="header">
+                <h1>Game Lobby</h1>
+                <p class="subtitle" id="lobbyRoomCode">Room: ------</p>
+            </div>
+
+            <div class="setup-content">
+                <h2 style="color: #764ba2; margin-bottom: 20px;">Players</h2>
+
+                <div id="lobbyPlayersList" style="background: #f0f0f0; padding: 15px;
+                                                   border-radius: 10px; margin-bottom: 20px;">
+                    <!-- Players will be listed here dynamically -->
+                </div>
+
+                <div id="hostControls" style="display: none;">
+                    <h3 style="color: #764ba2; margin-top: 30px;">Game Settings</h3>
+
+                    <div class="form-group">
+                        <label for="maxRounds">Number of Rounds</label>
+                        <select id="maxRounds">
+                            <option value="3">3 Rounds</option>
+                            <option value="5" selected>5 Rounds</option>
+                            <option value="7">7 Rounds</option>
+                            <option value="10">10 Rounds</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-primary" id="startGameBtn" onclick="startOnlineGame()"
+                            style="width: 100%; margin: 20px 0;" disabled>
+                        Start Game
+                    </button>
+                    <div id="startGameHint" style="text-align: center; color: #999; font-size: 13px; margin-top: -10px;">
+                        Waiting for at least 1 more player...
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary" onclick="leaveLobby()"
+                        style="width: 100%; margin: 10px 0;">
+                    Leave Lobby
+                </button>
+
+                <div id="lobbyStatus" style="text-align: center; margin-top: 20px;
+                                            color: #666; font-size: 14px;">
+                    Waiting for host to start game...
+                </div>
+            </div>
+        </div>
+
+        <!-- LOCAL SETUP SCREEN -->
+        <div id="setupScreen" class="screen">
             <div class="header">
                 <h1>Outrank V4</h1>
                 <p class="subtitle">Draft & Guess - Push Your Luck!</p>
@@ -1086,6 +1249,309 @@
             }
         }
 
+        // ===== MODE SELECTION & ONLINE SETUP =====
+
+        function selectGameMode(mode) {
+            GameModeManager.setMode(mode);
+
+            // Update mode indicator
+            const indicator = document.getElementById('modeIndicator');
+            const modeText = document.getElementById('modeText');
+
+            if (mode === 'local') {
+                indicator.style.background = '#667eea';
+                modeText.textContent = '🏠 Local Game';
+                indicator.style.display = 'block';
+                // Show local setup screen
+                showScreen('setupScreen');
+            } else if (mode === 'online') {
+                indicator.style.background = '#4caf50';
+                modeText.textContent = '🌐 Online Game';
+                indicator.style.display = 'block';
+                // Initialize Firebase and show online setup
+                initializeOnlineMode();
+            }
+        }
+
+        async function initializeOnlineMode() {
+            const success = await GameModeManager.initializeOnlineMode();
+
+            if (success) {
+                // Initialize room manager
+                RoomManager.initialize(GameModeManager.database);
+                showScreen('onlineSetupScreen');
+            } else {
+                alert('Failed to connect to Firebase. Please check your internet connection.');
+                showScreen('modeSelectionScreen');
+            }
+        }
+
+        function backToModeSelection() {
+            showScreen('modeSelectionScreen');
+        }
+
+        async function createNewGame() {
+            const playerName = document.getElementById('playerName').value.trim();
+
+            if (!playerName) {
+                alert('Please enter your name');
+                return;
+            }
+
+            try {
+                const roomCode = await RoomManager.createRoom(playerName);
+                localStorage.setItem('currentRoomCode', roomCode);
+
+                // Setup presence tracking
+                RoomManager.setupPresence(roomCode);
+
+                // Show lobby
+                initializeLobby(roomCode, true);
+            } catch (error) {
+                console.error('Error creating room:', error);
+                alert('Failed to create game: ' + error.message);
+            }
+        }
+
+        async function joinExistingGame() {
+            const playerName = document.getElementById('playerName').value.trim();
+            const roomCode = document.getElementById('roomCode').value.trim().toUpperCase();
+
+            if (!playerName) {
+                alert('Please enter your name');
+                return;
+            }
+
+            if (!roomCode || roomCode.length !== 6) {
+                alert('Please enter a valid 6-character room code');
+                return;
+            }
+
+            try {
+                await RoomManager.joinRoom(roomCode, playerName);
+                localStorage.setItem('currentRoomCode', roomCode);
+
+                // Setup presence tracking
+                RoomManager.setupPresence(roomCode);
+
+                // Show lobby
+                initializeLobby(roomCode, false);
+            } catch (error) {
+                console.error('Error joining room:', error);
+                alert('Failed to join game: ' + error.message);
+            }
+        }
+
+        function initializeLobby(roomCode, isHost) {
+            // Display room code
+            document.getElementById('lobbyRoomCode').textContent = `Room: ${roomCode}`;
+
+            // Show/hide host controls
+            const hostControls = document.getElementById('hostControls');
+            const lobbyStatus = document.getElementById('lobbyStatus');
+
+            if (isHost) {
+                hostControls.style.display = 'block';
+                lobbyStatus.style.display = 'none';
+            } else {
+                hostControls.style.display = 'none';
+                lobbyStatus.style.display = 'block';
+            }
+
+            // Listen for player updates
+            const database = GameModeManager.database;
+            const playersRef = database.ref('games/' + roomCode + '/players');
+
+            playersRef.on('value', (snapshot) => {
+                const players = snapshot.val() || {};
+                updateLobbyPlayersList(players);
+            });
+
+            // Listen for game start
+            const gameStateRef = database.ref('games/' + roomCode + '/gameState');
+            gameStateRef.on('value', (snapshot) => {
+                const gameStateData = snapshot.val();
+                console.log('📡 Lobby listener - phase:', gameStateData?.phase);
+                if (gameStateData && (gameStateData.phase === 'challenge' || gameStateData.phase === 'playing')) {
+                    // Game has started, transition to game screen
+                    console.log('🚀 Game started! Setting up sync...');
+                    syncGameStateFromFirebase();
+                }
+            });
+
+            showScreen('lobbyScreen');
+        }
+
+        function updateLobbyPlayersList(players) {
+            const listContainer = document.getElementById('lobbyPlayersList');
+            listContainer.innerHTML = '';
+
+            const playerIds = Object.keys(players);
+
+            console.log('📋 Updating lobby with', playerIds.length, 'players:', playerIds);
+
+            playerIds.forEach((playerId, index) => {
+                const player = players[playerId];
+
+                console.log('  Player', index + 1, ':', {
+                    id: playerId,
+                    name: player.name,
+                    isHost: player.isHost,
+                    connected: player.connected
+                });
+
+                const playerDiv = document.createElement('div');
+                playerDiv.style.cssText = `
+                    padding: 12px;
+                    margin: 8px 0;
+                    background: white;
+                    border-radius: 8px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                `;
+
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = player.name || 'Unknown Player';
+                nameSpan.style.fontWeight = 'bold';
+
+                const rightDiv = document.createElement('div');
+                rightDiv.style.display = 'flex';
+                rightDiv.style.alignItems = 'center';
+                rightDiv.style.gap = '10px';
+
+                const statusSpan = document.createElement('span');
+                if (player.isHost) {
+                    statusSpan.textContent = '👑 Host';
+                    statusSpan.style.color = '#764ba2';
+                }
+
+                const connectedIndicator = document.createElement('span');
+                connectedIndicator.textContent = player.connected ? '🟢' : '🔴';
+
+                rightDiv.appendChild(statusSpan);
+                rightDiv.appendChild(connectedIndicator);
+
+                playerDiv.appendChild(nameSpan);
+                playerDiv.appendChild(rightDiv);
+
+                listContainer.appendChild(playerDiv);
+            });
+
+            // Update start button state (only for host)
+            const startGameBtn = document.getElementById('startGameBtn');
+            const startGameHint = document.getElementById('startGameHint');
+
+            if (startGameBtn) {
+                console.log('🎮 Button state check: playerCount =', playerIds.length);
+                if (playerIds.length >= 2) {
+                    startGameBtn.disabled = false;
+                    if (startGameHint) startGameHint.style.display = 'none';
+                    console.log('✅ Button enabled');
+                } else {
+                    startGameBtn.disabled = true;
+                    if (startGameHint) startGameHint.style.display = 'block';
+                    console.log('❌ Button disabled');
+                }
+            }
+        }
+
+        async function startOnlineGame() {
+            const roomCode = localStorage.getItem('currentRoomCode');
+            const maxRounds = parseInt(document.getElementById('maxRounds').value);
+
+            const database = GameModeManager.database;
+            const gameStateRef = database.ref('games/' + roomCode + '/gameState');
+
+            // Update game state to start
+            await gameStateRef.update({
+                phase: 'challenge',
+                round: 1,
+                maxRounds: maxRounds,
+                currentPlayer: 0,
+                firstGuesser: 0,
+                challengeMode: 'cards', // V4 uses card-based challenges
+                playedChallenges: [],
+                drawnChallengeCards: [],
+                draftPool: [],
+                centerToken: null,
+                passedPlayers: [],
+                selectedDraftToken: null,
+                selectedCategory: null,
+                previousCategory: null
+            });
+
+            console.log('✅ Game started with', maxRounds, 'rounds');
+        }
+
+        async function leaveLobby() {
+            const roomCode = localStorage.getItem('currentRoomCode');
+
+            if (roomCode) {
+                await RoomManager.leaveRoom(roomCode);
+                localStorage.removeItem('currentRoomCode');
+            }
+
+            showScreen('onlineSetupScreen');
+        }
+
+        let hasStartedGame = false;
+        let lastSyncedRound = 0;
+
+        function syncGameStateFromFirebase() {
+            const roomCode = localStorage.getItem('currentRoomCode');
+            const database = GameModeManager.database;
+
+            // Listen to entire game state
+            const gameRef = database.ref('games/' + roomCode);
+
+            gameRef.on('value', (snapshot) => {
+                const gameData = snapshot.val();
+                if (gameData) {
+                    // Convert Firebase structure to local gameState
+                    const fbPlayers = gameData.players || {};
+                    const fbGameState = gameData.gameState || {};
+
+                    // Store player IDs for reference
+                    window.playerIds = Object.keys(fbPlayers);
+
+                    // Convert Firebase player object to array for V4 compatibility
+                    gameState.players = window.playerIds.map(id => fbPlayers[id]);
+
+                    // Copy game state fields
+                    Object.assign(gameState, fbGameState);
+
+                    console.log('🔄 Synced state:', {
+                        phase: gameState.phase,
+                        round: gameState.round,
+                        currentPlayer: gameState.currentPlayer,
+                        playerCount: gameState.players.length,
+                        hasStartedGame: hasStartedGame,
+                        challengeMode: gameState.challengeMode
+                    });
+
+                    // Update UI based on phase
+                    if (gameState.phase === 'challenge' && !hasStartedGame) {
+                        console.log('🎮 Starting game for first time!');
+                        hasStartedGame = true;
+                        // Show game screen and start round
+                        showScreen('gameScreen');
+                        console.log('📺 Showing game screen');
+                        startNewRound();
+                        console.log('🎲 Started new round');
+                    } else if (hasStartedGame) {
+                        // Continuous UI updates during gameplay
+                        console.log('♻️ Continuous UI update');
+                        updateGameUI();
+                    } else {
+                        console.log('⏸️ Waiting... phase:', gameState.phase, 'hasStarted:', hasStartedGame);
+                    }
+                }
+            });
+        }
+
+        // Note: updateGameUI is defined later in the file (line ~2023)
+
         // ===== GAME FLOW =====
         function startGame() {
             const numPlayers = parseInt(document.getElementById('numPlayers').value);
@@ -1123,11 +1589,20 @@
 
         function startNewRound() {
             // Open category selection modal for first guesser
-            const firstGuesserName = gameState.players[gameState.firstGuesser].name;
-            document.getElementById('firstGuesserName').textContent = firstGuesserName;
+            const firstGuesserName = gameState.players[gameState.firstGuesser]?.name || 'Player';
+            const firstGuesserElem = document.getElementById('firstGuesserName');
+            if (firstGuesserElem) {
+                firstGuesserElem.textContent = firstGuesserName;
+            }
+
+            // In online mode, only the first guesser draws cards (others receive via sync)
+            const isFirstGuesser = GameModeManager.isLocal() ||
+                                   (window.playerIds && window.playerIds[gameState.firstGuesser] === window.currentUserId);
+
+            console.log('🎲 startNewRound - isFirstGuesser:', isFirstGuesser, 'mode:', GameModeManager.getMode());
 
             // If in 'cards' mode, manage challenge cards
-            if (gameState.challengeMode === 'cards') {
+            if (gameState.challengeMode === 'cards' && isFirstGuesser) {
                 const categories = ['movies', 'countries', 'companies', 'sports'];
 
                 // First round: draw all cards fresh
@@ -1188,7 +1663,20 @@
             if (challengeSelect) challengeSelect.innerHTML = '<option value="">-- Select Challenge --</option>';
             if (categoryWarning) categoryWarning.style.display = 'none';
 
-            // Show modal with appropriate UI based on mode
+            // Sync drawn challenge cards to Firebase if online mode (only if first guesser)
+            if (GameModeManager.isOnline() && isFirstGuesser) {
+                GameModeManager.updateGameState({
+                    drawnChallengeCards: gameState.drawnChallengeCards
+                }).then(() => {
+                    console.log('✅ Synced challenge cards to Firebase');
+                });
+            }
+        }
+
+        // Show modal for everyone (placed outside the if block)
+        // If cards were drawn by first guesser, they're now synced
+        // If not first guesser, wait for sync to populate cards
+        if (gameState.challengeMode === 'cards') {
             showCategorySelectionModal();
         }
 
@@ -1197,10 +1685,21 @@
             const modalContent = modal.querySelector('.modal-content');
 
             if (gameState.challengeMode === 'cards') {
+                // Safety check: wait for cards to be populated
+                if (!gameState.drawnChallengeCards || gameState.drawnChallengeCards.length === 0) {
+                    console.log('⏳ Waiting for challenge cards to sync...');
+                    // Modal will be shown when cards sync triggers updateGameUI
+                    return;
+                }
+
+                // Get first guesser name safely
+                const firstGuesser = gameState.players?.[gameState.firstGuesser];
+                const firstGuesserName = firstGuesser?.name || 'Player';
+
                 // Show challenge cards UI
                 modalContent.innerHTML = `
                     <h2>Select Challenge Card</h2>
-                    <p style="margin-bottom: 20px;"><strong id="firstGuesserName">${gameState.players[gameState.firstGuesser].name}</strong>, choose one challenge card:</p>
+                    <p style="margin-bottom: 20px;"><strong id="firstGuesserName">${firstGuesserName}</strong>, choose one challenge card:</p>
                     <div id="challengeCardsContainer" style="display: grid; gap: 15px;">
                         ${gameState.drawnChallengeCards.map((cardData, idx) => {
                             const challenge = cardData.challenge;
@@ -1294,7 +1793,13 @@
             modal.classList.add('active');
         }
 
-        function selectChallengeCard(cardIndex) {
+        async function selectChallengeCard(cardIndex) {
+            // Turn validation for online mode
+            if (GameModeManager.isOnline() && !GameModeManager.isMyTurn()) {
+                showNotification("Wait for your turn!", 'warning');
+                return;
+            }
+
             const cardData = gameState.drawnChallengeCards[cardIndex];
             const challenge = cardData.challenge;
             gameState.currentChallenge = challenge;
@@ -1377,6 +1882,22 @@
             gameState.currentPlayer = gameState.firstGuesser;
             gameState.selectedDraftToken = null;
 
+            // Sync to Firebase if online mode
+            if (GameModeManager.isOnline()) {
+                await GameModeManager.updateGameState({
+                    currentChallenge: challenge,
+                    playedChallenges: gameState.playedChallenges,
+                    selectedCategory: gameState.selectedCategory,
+                    previousCategory: gameState.previousCategory,
+                    centerToken: gameState.centerToken,
+                    draftPool: gameState.draftPool,
+                    passedPlayers: Array.from(gameState.passedPlayers),
+                    currentPlayer: gameState.currentPlayer,
+                    selectedDraftToken: null
+                });
+                console.log('✅ Synced challenge selection to Firebase');
+            }
+
             // Update UI
             updateGameUI();
         }
@@ -1419,20 +1940,24 @@
         }
 
         function getAvailableTokensForCategory(category) {
-            const pool = gameState.categoryPools[category];
+            const pool = gameState.categoryPools?.[category];
             if (!pool) return 0;
 
             // Calculate tokens in use by players and in play
             let tokensInUse = 0;
 
             // Count tokens in player hands and thisRound
-            gameState.players.forEach(player => {
-                player.hand.forEach(token => {
-                    if (token.id && pool.some(t => t.id === token.id)) {
-                        // This is a placeholder check - in reality, we need better tracking
+            if (Array.isArray(gameState.players)) {
+                gameState.players.forEach(player => {
+                    if (player && Array.isArray(player.hand)) {
+                        player.hand.forEach(token => {
+                            if (token && token.id && pool.some(t => t.id === token.id)) {
+                                // This is a placeholder check - in reality, we need better tracking
+                            }
+                        });
                     }
                 });
-            });
+            }
 
             // For now, just return pool length (will improve token tracking later)
             return pool.length;
@@ -1496,16 +2021,29 @@
         // ===== UI UPDATES =====
         function updateGameUI() {
             // Update round number
-            document.getElementById('roundNumber').textContent = `${gameState.round} / ${gameState.maxRounds}`;
+            const roundNumber = document.getElementById('roundNumber');
+            if (roundNumber) {
+                roundNumber.textContent = `${gameState.round} / ${gameState.maxRounds}`;
+            }
 
-            // Update challenge info
-            document.getElementById('challengeInfo').style.display = 'block';
-            document.getElementById('challengeName').textContent = gameState.currentChallenge.name;
-            document.getElementById('statName').textContent = 'Higher or Lower';
+            // Update challenge info (only if challenge selected)
+            if (gameState.currentChallenge) {
+                const challengeInfo = document.getElementById('challengeInfo');
+                if (challengeInfo) challengeInfo.style.display = 'block';
 
-            // Update center token
-            document.getElementById('centerTokenArea').style.display = 'block';
-            renderCenterToken();
+                const challengeName = document.getElementById('challengeName');
+                if (challengeName) challengeName.textContent = gameState.currentChallenge.name;
+
+                const statName = document.getElementById('statName');
+                if (statName) statName.textContent = 'Higher or Lower';
+            }
+
+            // Update center token (only if exists)
+            if (gameState.centerToken) {
+                const centerTokenArea = document.getElementById('centerTokenArea');
+                if (centerTokenArea) centerTokenArea.style.display = 'block';
+                renderCenterToken();
+            }
 
             // Update draft pool
             renderDraftPool();
@@ -1534,10 +2072,21 @@
 
         function renderDraftPool() {
             const container = document.getElementById('draftPool');
-            const pool = gameState.draftPool;
-            const statField = gameState.currentChallenge.stat;
+            if (!container) return;
 
-            document.getElementById('poolCount').textContent = pool.length;
+            const pool = gameState.draftPool;
+            const poolCount = document.getElementById('poolCount');
+            if (poolCount) {
+                poolCount.textContent = pool.length;
+            }
+
+            // Safety check - don't render if no challenge selected yet
+            if (!gameState.currentChallenge) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const statField = gameState.currentChallenge.stat;
 
             container.innerHTML = pool.map(token => {
                 const statValue = token.stats[statField];
